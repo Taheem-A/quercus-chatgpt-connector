@@ -85,8 +85,8 @@ function empty(title, detail = '') { return `<div class="empty"><div><strong>${e
 
 function renderNav() {
   $('#nav').innerHTML = VIEWS.map(([id, icon, label]) => `
-    <button class="nav-button ${state.view === id ? 'active' : ''}" data-view="${id}">
-      <span class="nav-icon">${icon}</span><span>${escapeHtml(label)}</span>
+    <button class="nav-button ${state.view === id ? 'active' : ''}" data-view="${id}" ${state.view === id ? 'aria-current="page"' : ''}>
+      <span class="nav-icon" aria-hidden="true">${icon}</span><span>${escapeHtml(label)}</span>
     </button>`).join('');
   $('#nav').querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => navigate(btn.dataset.view)));
 }
@@ -236,7 +236,7 @@ function announcementsView() {
   }).sort((a,b) => Date.parse(b.posted_at || b.created_at || 0) - Date.parse(a.posted_at || a.created_at || 0));
   return rows.length ? `<div class="grid">${rows.map(a => {
     const cid = a.course_id || String(a.context_code || '').replace('course_', '');
-    return `<article class="card pad"><div class="section-header"><div><h2 class="section-title">${escapeHtml(a.title || 'Untitled announcement')}</h2><div class="section-description">${escapeHtml(courseName(cid))} · ${fmtDate(a.posted_at || a.created_at)}${a.author?.display_name ? ` · ${escapeHtml(a.author.display_name)}` : ''}</div></div><div>${link(a.html_url)}</div></div><div class="small" style="line-height:1.6;color:#c5cbd2">${escapeHtml(stripHtml(a.message || '')).slice(0, 6000)}</div></article>`;
+    return `<article class="card pad"><div class="section-header"><div><h2 class="section-title">${escapeHtml(a.title || 'Untitled announcement')}</h2><div class="section-description">${escapeHtml(courseName(cid))} · ${fmtDate(a.posted_at || a.created_at)}${a.author?.display_name ? ` · ${escapeHtml(a.author.display_name)}` : ''}</div></div><div>${link(a.html_url)}</div></div><div class="small rich-text-preview">${escapeHtml(stripHtml(a.message || '')).slice(0, 6000)}</div></article>`;
   }).join('')}</div>` : empty('No announcements match');
 }
 
@@ -315,7 +315,7 @@ function gradesView() {
     }
   }
   return `
-    <div class="grid cards-3">${grades.length ? grades.map(g => `<div class="card pad"><div class="course-code">${escapeHtml(g.courseCode || g.courseName)}</div><div style="font-size:32px;font-weight:750;margin:15px 0 5px">${escapeHtml(g.currentScore ?? '—')}${g.currentScore != null ? '%' : ''}</div><div class="muted small">Current ${escapeHtml(g.currentGrade ?? '—')} · Final ${escapeHtml(g.finalGrade ?? '—')} (${escapeHtml(g.finalScore ?? '—')}%)</div></div>`).join('') : `<div class="callout">Canvas did not return course-level grade summaries for the current filter.</div>`}</div>
+    <div class="grid cards-3">${grades.length ? grades.map(g => `<div class="card pad"><div class="course-code">${escapeHtml(g.courseCode || g.courseName)}</div><div class="grade-score">${escapeHtml(g.currentScore ?? '—')}${g.currentScore != null ? '%' : ''}</div><div class="muted small">Current ${escapeHtml(g.currentGrade ?? '—')} · Final ${escapeHtml(g.finalGrade ?? '—')} (${escapeHtml(g.finalScore ?? '—')}%)</div></div>`).join('') : `<div class="callout">Canvas did not return course-level grade summaries for the current filter.</div>`}</div>
     <section class="section"><div class="section-header"><div><h2 class="section-title">Submissions</h2><div class="section-description">Submission records returned by Canvas.</div></div></div>
     ${submissions.length ? `<div class="table-wrap"><table><thead><tr><th>Assignment</th><th>Course</th><th>Status</th><th>Submitted</th><th>Grade</th><th>Score</th><th>Attempt</th></tr></thead><tbody>${submissions.map(({c,s}) => `<tr><td><div class="cell-title">${escapeHtml(s.assignment?.name || `Assignment ${s.assignment_id}`)}</div></td><td>${escapeHtml(c.course_code || c.name)}</td><td>${s.missing ? badge('Missing','danger') : s.late ? badge('Late','warning') : badge(s.workflow_state || 'Unknown', s.workflow_state === 'graded' ? 'success' : '')}</td><td class="nowrap">${fmtDate(s.submitted_at, true)}</td><td>${escapeHtml(s.grade ?? '—')}</td><td>${escapeHtml(s.score ?? '—')}</td><td>${escapeHtml(s.attempt ?? '—')}</td></tr>`).join('')}</tbody></table></div>` : empty('No submission records match')}</section>`;
 }
@@ -382,13 +382,13 @@ function settingsView() {
       </section>
       <section class="card pad">
         <h2 class="section-title">Current state</h2>
-        <div style="margin-top:14px" class="small">
+        <div class="small settings-meta">
           <p><strong>Credential source:</strong> ${escapeHtml(state.settings?.source || 'none')}</p>
           <p><strong>Last sync:</strong> ${escapeHtml(state.status?.snapshot?.lastSync ? fmtDate(state.status.snapshot.lastSync) : 'Never')}</p>
           <p><strong>Saved courses:</strong> ${escapeHtml(state.status?.snapshot?.courses ?? 0)}</p>
           <p><strong>Failed endpoint probes:</strong> ${escapeHtml(state.status?.snapshot?.failedEndpoints ?? 0)}</p>
         </div>
-        <div class="callout" style="margin-top:16px">The token is never displayed back to the browser after saving. To rotate it, paste a new token and save again.</div>
+        <div class="callout settings-callout">The token is never displayed back to the browser after saving. To rotate it, paste a new token and save again.</div>
       </section>
     </div>`;
 }
