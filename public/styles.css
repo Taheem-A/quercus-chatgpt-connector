@@ -160,6 +160,16 @@ a:not(:hover) { text-decoration: none; }
 }
 
 .nav-group { display:grid; gap:4px; }
+.nav-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
 .nav-group + .nav-group {
   border-top:1px solid var(--border);
   margin-top:14px;
