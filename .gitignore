@@ -1,0 +1,21 @@
+# Secrets
+.env
+.env.local
+.quercus-local.json
+
+# Local data
+/data/*.json
+/data/*.tmp
+/data/history/
+/exports/
+/downloads/
+
+# Old/optional project artifacts
+.vercel/
+.next/
+node_modules/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/

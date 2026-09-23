@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Quercus Local</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">Q</div>
+        <div>
+          <div class="brand-title">Quercus Local</div>
+          <div class="brand-subtitle">Canvas snapshot & exporter</div>
+        </div>
+      </div>
+      <nav id="nav" class="nav"></nav>
+      <div class="sidebar-footer">
+        <div id="connectionPill" class="connection-pill"><span class="dot"></span><span>Checking…</span></div>
+        <div class="small muted">Runs only on this computer</div>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="mobileMenu" class="icon-btn mobile-only" aria-label="Menu">☰</button>
+          <div>
+            <h1 id="viewTitle">Overview</h1>
+            <div id="viewSubtitle" class="muted">Your latest Quercus snapshot</div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div class="search-wrap">
+            <span>⌕</span>
+            <input id="searchInput" type="search" placeholder="Search this view…" autocomplete="off" />
+          </div>
+          <select id="courseFilter" class="select" aria-label="Filter by course"><option value="all">All courses</option></select>
+          <button id="syncButton" class="button primary">Sync Quercus</button>
+        </div>
+      </header>
+
+      <div id="syncBar" class="syncbar hidden">
+        <div class="syncbar-row">
+          <div>
+            <strong id="syncMessage">Syncing…</strong>
+            <span id="syncCourse" class="muted"></span>
+          </div>
+          <span id="syncPercent">0%</span>
+        </div>
+        <div class="progress"><div id="progressFill"></div></div>
+      </div>
+
+      <main id="content" class="content"></main>
+    </div>
+  </div>
+
+  <div id="toastStack" class="toast-stack"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
