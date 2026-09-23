@@ -1,75 +1,16 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="color-scheme" content="light dark" />
-  <meta name="theme-color" content="#246b58" />
+  <meta name="theme-color" content="#356f61" />
   <title>Quercus Local</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <a class="skip-link" href="#content">Skip to content</a>
-
-  <div class="app-shell">
-    <aside class="sidebar" aria-label="Primary navigation">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true">Q</div>
-        <div>
-          <div class="brand-title">Quercus Local</div>
-          <div class="brand-subtitle">Academic data workspace</div>
-        </div>
-      </div>
-
-      <nav id="nav" class="nav" aria-label="Quercus views"></nav>
-
-      <div class="sidebar-footer">
-        <div id="connectionPill" class="connection-pill">
-          <span class="dot" aria-hidden="true"></span>
-          <span>Checking…</span>
-        </div>
-        <div class="small muted">Local only · no cloud database</div>
-      </div>
-    </aside>
-
-    <div class="workspace">
-      <header class="topbar">
-        <div class="topbar-left">
-          <button id="mobileMenu" class="icon-btn mobile-only" type="button" aria-label="Open navigation">☰</button>
-          <div>
-            <h1 id="viewTitle">Overview</h1>
-            <div id="viewSubtitle" class="muted">Your latest Quercus snapshot</div>
-          </div>
-        </div>
-
-        <div class="topbar-actions">
-          <div class="search-wrap">
-            <span aria-hidden="true">⌕</span>
-            <input id="searchInput" type="search" aria-label="Search current view" placeholder="Search this view…" autocomplete="off" />
-          </div>
-          <select id="courseFilter" class="select" aria-label="Filter by course">
-            <option value="all">All courses</option>
-          </select>
-          <button id="syncButton" class="button primary" type="button">Sync Quercus</button>
-        </div>
-      </header>
-
-      <div id="syncBar" class="syncbar hidden" role="status" aria-live="polite">
-        <div class="syncbar-row">
-          <div>
-            <strong id="syncMessage">Syncing…</strong>
-            <span id="syncCourse" class="muted"></span>
-          </div>
-          <span id="syncPercent">0%</span>
-        </div>
-        <div class="progress" aria-hidden="true"><div id="progressFill"></div></div>
-      </div>
-
-      <main id="content" class="content" tabindex="-1"></main>
-    </div>
-  </div>
-
-  <div id="toastStack" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
+  <div id="app"></div>
+  <div id="portal"></div>
   <script type="module" src="/app.js"></script>
 </body>
 </html>
