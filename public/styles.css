@@ -1108,6 +1108,57 @@ article.card.pad:first-child {
   color: var(--text-strong);
 }
 
+
+/* Accessibility + content-specific helpers */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 200;
+  padding: 8px 10px;
+  border-radius: var(--r-control);
+  background: var(--text-strong);
+  color: var(--bg);
+  font-size: 13px;
+  font-weight: 600;
+  transform: translateY(-160%);
+  transition: transform 120ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.rich-text-preview {
+  max-width: 92ch;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.grade-score {
+  margin: 12px 0 4px;
+  color: var(--text-strong);
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 650;
+  letter-spacing: -.03em;
+}
+
+.settings-meta {
+  margin-top: var(--s-3);
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.settings-meta strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.settings-callout {
+  margin-top: var(--s-4);
+}
+
 /* Responsive behavior */
 @media (max-width: 1180px) {
   .grid.cards-4 {
