@@ -344,3 +344,37 @@ No `npm install` is required by this version.
 - Export files never include the token.
 - Quercus data is written under this project directory only when you sync or explicitly save an export.
 - The only external network requests made by the backend are to your configured Canvas/Quercus server and Canvas-provided file download URLs.
+
+
+## Experimental University Hub file import (opt-in)
+
+The new `files:sync` command imports accessible course files into a directory **you choose**. It works with an existing saved Quercus snapshot, and never deletes or replaces user files. This is the first step toward University Hub integration; it is **not** yet a scheduled background service or a Planner integration.
+
+1. Start Quercus Local, configure your token, and click **Sync Quercus** so `data/snapshot.json` exists.
+2. Open PowerShell in this repository.
+3. Preview the next 100 eligible file imports (no token or filesystem writes required):
+
+   ```powershell
+   npm run files:sync -- --out "C:\\path\\to\\Google Drive\\UofT\\Quercus Imports" --dry-run
+   ```
+
+4. Import the files after reviewing the preview:
+
+   ```powershell
+   npm run files:sync -- --out "C:\\path\\to\\Google Drive\\UofT\\Quercus Imports"
+   ```
+
+Replace the example path with your actual UofT folder. The command does not assume a Google Drive drive letter or local path.
+
+Options:
+
+- `--course MAT188` to limit matching course codes or IDs;
+- `--max-files 250` to attempt more than the default 100 new files per run;
+- `--max-mb 250` to adjust the default 100 MiB per-file limit;
+- `--dry-run` to see proposed downloads without writes or network calls.
+
+Downloads are placed in course-named subfolders of the selected output directory. Imported filenames include the Canvas file ID and a metadata-version fingerprint. Re-running with the same snapshot skips unchanged files; a changed version gets a different filename, preserving prior copies. Local sync state is kept in `.quercus-file-manifest.json` in the output directory; keep that file when moving the imported directory.
+
+**Safety limits:** audio/video files are skipped, Canvas file metadata must contain a numeric ID, and each downloaded response is size-bounded. Failed downloads are reported without stopping the whole run. Existing files are never overwritten; missing/replaced manifests can cause safe filename conflicts rather than silent changes. The importer does not remove files when Quercus removes them, does not detect separately downloaded copies outside its output directory, and cannot retrieve files that Canvas does not expose to the authenticated student.
+
+Run the small synthetic regression suite with `npm test`; no real Quercus token is used by the tests.

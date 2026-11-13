@@ -1,0 +1,22 @@
+name: Quercus Local checks
+
+on:
+  push:
+    branches: [main, feature/quercus-safe-file-sync]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax checks
+        run: npm run check
+      - name: File-sync regression tests
+        run: npm test

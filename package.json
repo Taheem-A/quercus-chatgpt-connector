@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node server.mjs",
     "start:no-open": "node server.mjs --no-open",
-    "check": "node --check server.mjs && node --check lib/config.mjs && node --check lib/canvas.mjs && node --check lib/sync.mjs && node --check lib/export.mjs"
+    "check": "node --check server.mjs && node --check lib/config.mjs && node --check lib/canvas.mjs && node --check lib/sync.mjs && node --check lib/export.mjs && node --check lib/file-sync.mjs && node --check scripts/sync-files.mjs",
+    "files:sync": "node scripts/sync-files.mjs",
+    "test": "node --test tests/*.test.mjs"
   },
   "engines": {
     "node": ">=20"
