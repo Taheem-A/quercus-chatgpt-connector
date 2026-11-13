@@ -352,7 +352,7 @@ The new `files:sync` command imports accessible course files into a directory **
 
 1. Start Quercus Local, configure your token, and click **Sync Quercus** so `data/snapshot.json` exists.
 2. Open PowerShell in this repository.
-3. Preview the first 100 file candidates (no token or filesystem writes required):
+3. Preview the next 100 eligible file imports (no token or filesystem writes required):
 
    ```powershell
    npm run files:sync -- --out "C:\\path\\to\\Google Drive\\UofT\\Quercus Imports" --dry-run
@@ -369,7 +369,7 @@ Replace the example path with your actual UofT folder. The command does not assu
 Options:
 
 - `--course MAT188` to limit matching course codes or IDs;
-- `--max-files 250` to examine more than the default 100 files;
+- `--max-files 250` to attempt more than the default 100 new files per run;
 - `--max-mb 250` to adjust the default 100 MiB per-file limit;
 - `--dry-run` to see proposed downloads without writes or network calls.
 
