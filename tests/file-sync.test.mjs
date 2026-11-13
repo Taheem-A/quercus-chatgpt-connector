@@ -78,3 +78,23 @@ test('oversized, streamed oversized, and media files do not get imported', async
   const blocked = await syncFiles({ snapshot: media, destination: dir, client });
   assert.equal(blocked.skippedMedia, 1);
 });
+
+test('download budget advances across unchanged entries on repeated runs', async (t) => {
+  const dir = await tempDir();
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  const s = snapshot();
+  s.courseData[17].files.push({ id: 303, display_name: 'Tutorial 08.pdf', size: 5,
+    updated_at: '2026-11-13T15:00:00Z', 'content-type': 'application/pdf' });
+  let count = 0;
+  const client = { async downloadFile() { count++; return { response: new Response('hello') }; } };
+  const first = await syncFiles({ snapshot: s, client, destination: dir, maxFiles: 1 });
+  assert.equal(first.downloaded, 1);
+  assert.equal(first.attempted, 1);
+  const preview = await syncFiles({ snapshot: s, destination: dir, maxFiles: 1, dryRun: true });
+  assert.equal(preview.proposed, 1);
+  assert.equal(preview.unchanged, 1);
+  const next = await syncFiles({ snapshot: s, client, destination: dir, maxFiles: 1 });
+  assert.equal(next.downloaded, 1);
+  assert.equal(next.unchanged, 1);
+  assert.equal(count, 2);
+});
