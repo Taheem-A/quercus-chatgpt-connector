@@ -1,13 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { BrowserCanvasClient } from '../mobile/core/canvas.mjs';
 import { syncQuercus } from '../mobile/core/sync.mjs';
 
-const require = createRequire(import.meta.url);
-const relay = require('../mobile/api/canvas.js');
-const { allowedPath, validateTarget, nextPage } = relay._test;
+import relay, { allowedPath, validateTarget, nextPage } from '../mobile/api/canvas.js';
 const HOST = 'quercus-pocket.vercel.app';
 const TOKEN = 'test-token-1234567890123';
 function request(path, token = TOKEN, origin = 'https://' + HOST) {
