@@ -138,6 +138,10 @@ function render(){
   }
   if(state.markdown&&!state.snapshot){content.innerHTML=markdownHome();return;}
   content.innerHTML=({home:snapshotHome,tasks:snapshotTasks,courses:snapshotCourses,pages:snapshotPages,more:snapshotMore}[state.view]||snapshotHome)();
+  // Images whose Canvas content provides only a file API reference have no
+  // initial browser URL: resolve their signed URLs on demand.
+  content.querySelectorAll('img[data-canvas-image-pending]').forEach(image =>
+    handleInlineImageFailure({target:image}));
   const courseSelect=$('pageCourse');if(courseSelect)courseSelect.addEventListener('change',e=>{state.course=e.target.value;render()});
   document.querySelectorAll('[data-course]').forEach(b=>b.addEventListener('click',()=>navigateCourse(b.dataset.course)));
   $('refreshExport')?.addEventListener('click',openImport);
