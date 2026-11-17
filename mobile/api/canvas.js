@@ -68,7 +68,7 @@ function reject(res, status, message) {
   return res.status(status).json({ error: message });
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, private');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'no-referrer');
@@ -150,4 +150,4 @@ module.exports = async function handler(req, res) {
 };
 
 // Exposed only for offline tests; no Vercel endpoint can call these directly.
-module.exports._test = { allowedPath, validateTarget, nextPage };
+export { allowedPath, validateTarget, nextPage };
