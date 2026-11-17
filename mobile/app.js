@@ -532,7 +532,7 @@ content.addEventListener('click',event=>{
     return;
   }
   const link=target.closest('a[href]');
-  if(link && !link.hasAttribute('data-canvas-file') && content.contains(link) && state.snapshot){
+  if(link && !link.hasAttribute('data-canvas-file') && !link.hasAttribute('data-pocket-external') && content.contains(link) && state.snapshot){
     const assignment=resolveSavedAssignmentLink(state.snapshot,link.getAttribute('href'),link.dataset.canvasApiEndpoint || '');
     if(assignment){event.preventDefault();navigateAssignment(assignment.courseId,assignment.id);return;}
     const resolved=resolveSavedPageLink(state.snapshot,link.getAttribute('href'),
