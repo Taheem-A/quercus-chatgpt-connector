@@ -15,11 +15,13 @@ export function describeFilePreview(metadata, publicPreviewUrl = '', originalUrl
   if (mime === 'application/pdf' || lower.endsWith('.pdf')) kind = 'pdf';
   else if (/^image\/(?:png|jpeg|jpg|gif|webp|avif)$/.test(mime) || /\.(?:png|jpe?g|gif|webp|avif)$/.test(lower)) kind = 'image';
   else if (mime === 'text/plain' || lower.endsWith('.txt')) kind = 'text';
+  else if (secure(metadata?.preview_url)) kind = 'document';
 
   // /public_url is the official Canvas inline preview URL. A file may have a
   // separate raw URL whose response intentionally requests download.
-  const preview = secure(publicPreviewUrl) || secure(metadata?.preview_url) ||
-    secure(metadata?.url);
+  const preview = kind === 'document'
+    ? secure(metadata?.preview_url)
+    : secure(publicPreviewUrl) || secure(metadata?.preview_url) || secure(metadata?.url);
   const download = secure(metadata?.url) || secure(originalUrl);
   const origin = secure(metadata?.html_url) || secure(originalUrl);
   return {
