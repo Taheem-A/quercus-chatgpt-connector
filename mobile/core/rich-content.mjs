@@ -8,7 +8,7 @@ const TAGS = new Set([
   'dl', 'dt', 'dd',
 ]);
 const SKIP = new Set([
-  'script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button',
+  'script', 'style', 'object', 'embed', 'form', 'input', 'button',
   'select', 'textarea', 'svg', 'math', 'meta', 'link', 'base', 'video', 'audio',
   'canvas', 'template',
 ]);
@@ -84,10 +84,24 @@ export function renderCanvasContent(rawHtml) {
     if (node.nodeType !== 1) return;
     const tag = node.localName.toLowerCase();
     if (SKIP.has(tag)) return;
+    if (tag === 'iframe') {
+      // Canvas often embeds file previews as iframes. Keep a safe open link
+      // instead of silently dropping an embedded document.
+      const info = classifyCanvasLink(node.getAttribute('src'), node.getAttribute('data-api-endpoint'));
+      if (info) {
+        const anchor = makeSafeAnchor(info);
+        anchor.textContent = 'Open embedded resource' + (info.fileId ? ' (file ' + info.fileId + ')' : '');
+        parent.appendChild(anchor);
+      }
+      return;
+    }
     if (tag === 'img') {
       const info = classifyCanvasLink(node.getAttribute('src'), node.getAttribute('data-api-endpoint'));
       const alt = node.getAttribute('alt') || 'Image';
-      if (info) {
+      if (parent.localName === 'a') {
+        // Avoid invalid nested anchors in a linked Canvas image.
+        parent.appendChild(document.createTextNode('🖼 ' + alt));
+      } else if (info) {
         const anchor = makeSafeAnchor(info);
         anchor.textContent = '🖼 ' + alt + ' (view image)';
         parent.appendChild(anchor);
@@ -127,11 +141,11 @@ export function contentLinks(rawHtml) {
   const doc = new DOMParser().parseFromString(String(rawHtml), 'text/html');
   const seen = new Set();
   const output = [];
-  for (const node of doc.querySelectorAll('a, img')) {
+  for (const node of doc.querySelectorAll('a, img, iframe')) {
     if (output.length >= 120) break;
-    const image = node.localName === 'img';
+    const resource = node.localName === 'img' || node.localName === 'iframe';
     const info = classifyCanvasLink(
-      node.getAttribute(image ? 'src' : 'href'),
+      node.getAttribute(resource ? 'src' : 'href'),
       node.getAttribute('data-api-endpoint'),
     );
     if (!info) continue;
@@ -141,7 +155,7 @@ export function contentLinks(rawHtml) {
     output.push({
       ...info,
       label: (
-        (image ? node.getAttribute('alt') : node.textContent) ||
+        (node.localName === 'img' ? node.getAttribute('alt') : node.textContent) ||
         node.getAttribute('title') ||
         (info.fileId ? 'File ' + info.fileId : 'Open linked resource')
       ).trim().slice(0, 160),
