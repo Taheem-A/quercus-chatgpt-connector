@@ -1,0 +1,7 @@
+{
+  "name": "quercus-pocket",
+  "version": "1.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Quercus Pocket mobile PWA and Vercel API function"
+}
