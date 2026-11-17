@@ -29,9 +29,16 @@ export function buildPageCatalog(snapshot, activeCourseId = 'all', query = '') {
   if (!snapshot) return '';
   const courses = (snapshot.courses || []).filter(c => (snapshot.courseData?.[c.id]?.pages || []).length > 0);
   const needle = String(query).trim().toLowerCase();
+  const matchesPage = (courseId, slug) => {
+    if (!needle) return true;
+    const cd = snapshot.courseData?.[courseId] || {};
+    const p = (cd.pages || []).find(x => String(x.url) === String(slug));
+    return String(p?.title || '').toLowerCase().includes(needle) ||
+      String(cd.pageDetails?.[slug]?.body || '').toLowerCase().includes(needle);
+  };
   if (activeCourseId === 'all' || !courses.some(c => String(c.id) === String(activeCourseId))) {
     const choices = courses.filter(c => !needle || [c.course_code,c.name].some(v => String(v||'').toLowerCase().includes(needle)) ||
-      (snapshot.courseData?.[c.id]?.pages || []).some(p => String(p.title||'').toLowerCase().includes(needle)));
+      (snapshot.courseData?.[c.id]?.pages || []).some(p => matchesPage(c.id,p.url)));
     return '<div class="reader-section-heading"><div><div class="reader-kicker">COURSE LIBRARY</div><h2>Your course pages</h2><p>Choose a course to browse its Modules and pages.</p></div><span class="reader-overview-count">' +
       courses.length + ' courses</span></div><div class="reader-course-list">' +
       choices.map(c => courseTile(c, (snapshot.courseData?.[c.id]?.pages || []).length)).join('') +
@@ -42,7 +49,7 @@ export function buildPageCatalog(snapshot, activeCourseId = 'all', query = '') {
   const groups = courseModulePages(snapshot, activeCourseId);
   const total = (snapshot.courseData?.[activeCourseId]?.pages || []).length;
   const sections = groups.map((g, idx) => {
-    const items = g.items.filter(item => !needle || item.title.toLowerCase().includes(needle) || g.name.toLowerCase().includes(needle));
+    const items = g.items.filter(item => !needle || item.title.toLowerCase().includes(needle) || g.name.toLowerCase().includes(needle) || matchesPage(activeCourseId,item.slug));
     if (!items.length) return '';
     const open = needle || idx < 2 ? ' open' : '';
     return '<details class="reader-module"'+open+'><summary><span class="reader-module-icon">▥</span><span class="reader-module-label">' +
