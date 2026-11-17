@@ -1,6 +1,8 @@
 import { validateSnapshot, assignments, pages, announcements, files, extractMarkdownSections, courseName, dateValue } from './data.mjs';
 import { BrowserCanvasClient } from './core/canvas.mjs';
 import { syncQuercus } from './core/sync.mjs';
+import { renderCanvasContent, contentLinks } from './core/rich-content.mjs';
+import { makeMobileExport, makeSavedMarkdownExport } from './core/mobile-export.mjs';
 
 const $ = id => document.getElementById(id);
 const content = $('content');
@@ -24,6 +26,16 @@ function grouped(items,renderer,limit=80){
   return count?'<div class="stack two">'+items.slice(0,limit).map(renderer).join('')+'</div>'+(count>limit?'<p class="hint">Showing the first '+limit+' of '+count+' matches. Narrow your search to find more.</p>':''):empty('No matches','Try a different search or course filter.');
 }
 function openImport(){ $('importMessage').textContent=''; $('importDialog').showModal(); }
+function openExport(){
+  if(!state.snapshot&&!state.markdown){alert('Sync Quercus or import an export before downloading your data.');return;}
+  $('exportResult').replaceChildren();
+  $('exportMessage').textContent='';
+  for(const button of document.querySelectorAll('[data-export]')){
+    button.disabled=!state.snapshot && button.dataset.export!=='chatgpt';
+  }
+  $('exportDialog').showModal();
+}
+
 function openConnect(){
   $('connectMessage').textContent='';
   $('tokenInput').value='';
@@ -67,19 +79,45 @@ function snapshotCourses(){
     return card(courseName(c),c.name||'Course','<span class="pill">'+(cd.modules||[]).length+' modules</span> <span class="pill muted">'+(cd.pages||[]).length+' pages</span>'+(grades!==undefined?' <span class="pill">Grade '+escapeHtml(grades)+'</span>':''),'<button class="button outline" data-course="'+escapeHtml(c.id)+'">View pages</button>',c.term?.name||'');
   }));
 }
+// Safe Canvas HTML renderer: preserves links without trusting raw course markup.
+function pageContentHtml(html) {
+  const main = renderCanvasContent(html).outerHTML;
+  const resources = contentLinks(html);
+  const files = resources.filter(x => x.kind === 'file');
+  const links = resources.filter(x => x.kind !== 'file');
+  const entry = x => {
+    const target = escapeHtml(x.url);
+    const attr = x.kind === 'file' ? ' data-canvas-file="' + escapeHtml(x.fileId) + '"' : '';
+    return '<li><a class="canvas-link ' + (x.kind === 'file' ? 'canvas-file' : '') +
+      '" href="' + target + '" target="_blank" rel="noopener noreferrer"' + attr + '>' +
+      escapeHtml(x.label || (x.kind === 'file' ? 'Attachment' : 'Open link')) + '</a></li>';
+  };
+  let extra = '';
+  if (files.length) extra += '<h4>Attachments (' + files.length + ')</h4><ul class="resource-list">' + files.map(entry).join('') + '</ul>';
+  if (links.length) extra += '<h4>Other linked resources (' + links.length + ')</h4><ul class="resource-list">' + links.map(entry).join('') + '</ul>';
+  return main + extra;
+}
+function fileAction(file) {
+  if (file.id && /^\d+$/.test(String(file.id))) {
+    return '<a class="canvas-link canvas-file" data-canvas-file="' + escapeHtml(file.id) +
+      '" href="' + escapeHtml('https://q.utoronto.ca/files/' + file.id + '/download') +
+      '" target="_blank" rel="noopener noreferrer">Open / download file ↧</a>';
+  }
+  return link(file.url, 'Open file');
+}
 function snapshotPages(){
   const all=pages(state.snapshot);
   const arr=all.filter(p=>(state.course==='all'||String(p.courseId)===state.course)&&match(p.title,p.course,p.module,p.text));
   const courses=state.snapshot.courses;
   const select='<label class="sr-only" for="pageCourse">Filter course</label><select id="pageCourse" class="course-select"><option value="all">All courses</option>'+courses.map(c=>'<option value="'+escapeHtml(c.id)+'" '+(state.course===String(c.id)?'selected':'')+'>'+escapeHtml(courseName(c))+'</option>').join('')+'</select>';
-  return section('Course pages',select+grouped(arr,p=>card(p.title,p.module||'Course Page','<span class="pill '+(p.status==='retrieved'?'':'warn')+'">'+(p.status==='retrieved'?'Content saved':'Body unavailable')+'</span>'+(p.text?'<details><summary>Read page</summary><div class="body-text">'+escapeHtml(p.text)+'</div></details>':''),link(p.url),p.course)),arr.length+' found');
+  return section('Course pages',select+grouped(arr,p=>card(p.title,p.module||'Course Page','<span class="pill '+(p.status==='retrieved'?'':'warn')+'">'+(p.status==='retrieved'?'Content saved':'Body unavailable')+'</span>'+(p.html?'<details><summary>Read page and open links</summary>'+pageContentHtml(p.html)+'</details>':p.text?'<details><summary>Read page</summary><div class="body-text">'+escapeHtml(p.text)+'</div></details>':''),link(p.url),p.course)),arr.length+' found');
 }
 function snapshotMore(){
   const notes=announcements(state.snapshot).filter(a=>match(a.title,a.text,a.course));
   const matches=files(state.snapshot).filter(f=>match(f.title,f.course));
   return section('Announcements',grouped(notes,a=>card(a.title,a.text.slice(0,600),a.text.length>600?'<details><summary>Read full announcement</summary><div class="body-text">'+escapeHtml(a.text)+'</div></details>':'',link(a.url),a.course+' · '+readableDate(a.date)),25))+
-    section('Course files',grouped(matches,f=>card(f.title,f.course, '',link(f.url,'Open / download'),f.bytes?Math.round(f.bytes/1024)+' KB':''),35),matches.length+' found')+
-    section('Sync and privacy','<div class="card"><p>You can sync Quercus directly on this phone with an access token. Your saved data stays offline-capable. Live requests pass through the restricted HTTPS relay; no Quercus token or course snapshot is stored on Vercel.</p><div class="footer-actions"><button class="button" id="syncAgain">Sync now</button><button class="button outline" id="changeToken">Change token</button><button class="button outline" id="forgetToken">Forget saved token</button><button class="button outline" id="refreshExport">Import saved export</button><button class="button outline" id="clearData">Delete saved data</button></div></div>');
+    section('Course files',grouped(matches,f=>card(f.title,f.course, '',fileAction(f),f.bytes?Math.round(f.bytes/1024)+' KB':''),35),matches.length+' found')+
+    section('Sync and privacy','<div class="card"><p>You can sync Quercus directly on this phone with an access token. Your saved data stays offline-capable. Live requests pass through the restricted HTTPS relay; no Quercus token or course snapshot is stored on Vercel.</p><div class="footer-actions"><button class="button" id="syncAgain">Sync now</button><button class="button outline" id="changeToken">Change token</button><button class="button outline" id="forgetToken">Forget saved token</button><button class="button outline" id="openExportMore">Export my data</button><button class="button outline" id="refreshExport">Import saved export</button><button class="button outline" id="clearData">Delete saved data</button></div></div>');
 }
 function markdownHome(){
   const items=extractMarkdownSections(state.markdown);
@@ -101,6 +139,7 @@ function render(){
   const courseSelect=$('pageCourse');if(courseSelect)courseSelect.addEventListener('change',e=>{state.course=e.target.value;render()});
   document.querySelectorAll('[data-course]').forEach(b=>b.addEventListener('click',()=>{state.course=b.dataset.course;state.view='pages';state.query='';$('search').value='';render();scrollTo(0,0)}));
   $('refreshExport')?.addEventListener('click',openImport);
+  $('openExportMore')?.addEventListener('click',openExport);
   $('syncAgain')?.addEventListener('click',()=>state.token?startLiveSync():openConnect());
   $('changeToken')?.addEventListener('click',openConnect);
   $('forgetToken')?.addEventListener('click',async()=>{await dbForgetToken();state.token=null;alert('Saved access token cleared from this device.');});
@@ -130,6 +169,71 @@ async function importFile(file){
   } else throw new Error('Choose the Complete JSON (.json) or ChatGPT Markdown (.md) Quercus export.');
   state.view='home';state.course='all';state.query='';$('search').value='';
   $('importDialog').close();render();
+}
+
+let exportBlobUrl = null;
+async function exportSnapshot(format) {
+  const info = state.snapshot
+    ? makeMobileExport(state.snapshot, format)
+    : format === 'chatgpt' ? makeSavedMarkdownExport(state.markdown) : null;
+  if (!info) throw new Error('Only the saved Markdown can be exported in Markdown-only mode. Sync or import JSON for other formats.');
+  if (exportBlobUrl) URL.revokeObjectURL(exportBlobUrl);
+  const blob = new Blob([info.data], {type:info.type});
+  exportBlobUrl = URL.createObjectURL(blob);
+  const result = $('exportResult');
+  const anchor = document.createElement('a');
+  anchor.href = exportBlobUrl;
+  anchor.download = info.name;
+  anchor.className = 'button export-ready';
+  anchor.textContent = 'Save ' + info.name;
+  result.replaceChildren(anchor);
+  $('exportMessage').textContent = 'Generated on your phone: ' + Math.max(1, Math.round(blob.size/1024)) + ' KB. Save to Files or use Share.';
+  if (navigator.share && navigator.canShare && typeof File !== 'undefined') {
+    const file = new File([blob], info.name, {type:info.type});
+    if (navigator.canShare({files:[file]})) {
+      try {
+        await navigator.share({files:[file],title:'Quercus Pocket export'});
+        $('exportMessage').textContent = 'Share completed. The Save button remains available below.';
+      } catch (error) {
+        if (error.name !== 'AbortError') $('exportMessage').textContent = 'Sharing unavailable; use Save below.';
+      }
+    }
+  }
+}
+
+// The Canvas file API returns a download URL for files readable by this student.
+// Open that URL on the device (typically a signed Canvas/CDN link). No binary file
+// passes through Vercel, and the token never appears in a link or download URL.
+async function handleFileLink(event) {
+  const a = event.target.closest('a[data-canvas-file]');
+  if (!a || !content.contains(a) || !state.token || !navigator.onLine) return;
+  const id = a.dataset.canvasFile;
+  if (!/^\d+$/.test(id)) return;
+  event.preventDefault();
+  const fallback = a.href;
+  const popup = window.open('about:blank', '_blank');
+  if (popup) popup.document.body.textContent = 'Preparing Quercus file…';
+  try {
+    const response = await new BrowserCanvasClient(state.token).getOne('/api/v1/files/' + id);
+    const link = response.data?.url;
+    const url = new URL(link || '');
+    if (url.protocol !== 'https:') throw new Error('Quercus did not provide a secure download URL.');
+    if (popup) {
+      popup.location.href = url.toString();
+    } else {
+      const notice = document.createElement('div');
+      notice.className = 'download-result';
+      const ready = document.createElement('a');
+      ready.href = url.toString();
+      ready.target = '_blank'; ready.rel = 'noopener noreferrer';
+      ready.textContent = 'Tap here to open attachment ' + id;
+      notice.appendChild(ready);
+      a.after(notice);
+    }
+  } catch (error) {
+    if (popup) popup.location.href = fallback;
+    else alert('Automatic file access was unavailable. Open the original page in Quercus to download it.');
+  }
 }
 
 function progressText(update) {
@@ -202,6 +306,15 @@ $('connectNow').addEventListener('click', async () => {
 });
 
 $('importButton').addEventListener('click',openImport);
+$('exportButton').addEventListener('click',openExport);
+document.querySelectorAll('[data-export]').forEach(button => button.addEventListener('click',async ()=>{
+  $('exportMessage').textContent = 'Preparing export on this phone…';
+  button.disabled = true;
+  try {await exportSnapshot(button.dataset.export);}
+  catch(error){$('exportMessage').textContent='Export failed: '+error.message;}
+  finally {button.disabled=false;}
+}));
+content.addEventListener('click',handleFileLink);
 $('fileInput').addEventListener('change',async event=>{try{await importFile(event.target.files?.[0])}catch(e){$('importMessage').textContent='Unable to import: '+e.message}finally{event.target.value=''}});
 $('search').addEventListener('input',e=>{state.query=e.target.value.toLowerCase().trim();render()});
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{state.view=b.dataset.view;render();scrollTo(0,0)}));
