@@ -20,6 +20,7 @@
       <div class="identity"><div class="mark">Q</div><div><strong>Quercus Pocket</strong><small>Private course reader</small></div></div>
       <div class="toolbar">
         <button id="connectButton" class="icon-button" title="Sync Quercus" type="button" aria-label="Sync Quercus directly from phone">⟳</button>
+        <button id="exportButton" class="icon-button" title="Export your Quercus snapshot" type="button" aria-label="Export Quercus data">↧</button>
         <button id="importButton" class="icon-button" title="Import a saved export" type="button" aria-label="Import Quercus export">↥</button>
       </div>
     </header>
@@ -50,6 +51,20 @@
     <p class="hint">For live sync, your token travels over HTTPS through this application's private-request relay on Vercel to q.utoronto.ca. It is not retained on Vercel. If remembered, it is stored in this device's browser storage, not encrypted with an additional password.</p>
     <button id="connectNow" class="button" type="button">Connect and sync now</button>
     <p id="connectMessage" role="status"></p>
+  </dialog>
+  <dialog id="exportDialog">
+    <form method="dialog" class="dialog-head"><strong>Export Quercus data</strong><button class="icon-button" aria-label="Close">✕</button></form>
+    <p>Create an export from the latest data saved on this phone. No data is uploaded to the server. Use Share to save it in Files or send to another device.</p>
+    <div id="exportOptions" class="export-options">
+      <button type="button" class="button" data-export="json">Complete JSON (.json)</button>
+      <button type="button" class="button outline" data-export="chatgpt">ChatGPT Markdown (.md)</button>
+      <button type="button" class="button outline" data-export="markdown">Readable Markdown (.md)</button>
+      <button type="button" class="button outline" data-export="ics">Calendar (.ics)</button>
+      <button type="button" class="button outline" data-export="zip">Complete bundle (.zip)</button>
+    </div>
+    <p class="hint">The ZIP includes JSON, Markdown, CSV tables and ICS. Linked PDFs and attachments are not bundled automatically; download those from their page links.</p>
+    <p id="exportMessage" role="status"></p>
+    <div id="exportResult"></div>
   </dialog>
   <dialog id="importDialog">
     <form method="dialog" class="dialog-head"><strong>Import Quercus export</strong><button class="icon-button" aria-label="Close">✕</button></form>
