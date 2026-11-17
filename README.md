@@ -35,6 +35,18 @@ Direct browser-to-Quercus API calls may be blocked by cross-origin browser polic
 
 The phone service worker caches the mobile app and its sync code. Successful snapshots stay on the phone for offline browsing. Manually importing Complete JSON or ChatGPT Markdown exports remains optional; **a desktop export is no longer required for phone sync**.
 
+### Course-style Pages reader and inline attachment previews
+
+The Pages tab now provides a **course → Modules → Pages** hierarchy instead of showing hundreds of expanded page cards. Each selected page opens in a dedicated, readable layout with breadcrumbs, module contents, inline images and Previous/Next buttons.
+
+- Clicking a Quercus page link **already present in the saved snapshot** navigates to that page inside Pocket (no new tab). Links to unsynced, inaccessible or external resources still open the original destination. Module-item links are resolved to their Page when possible.
+- Course and Page navigation uses a URL hash so browser Back and deep links work without a server reload. The course catalog retains text search, including saved Page content.
+- Canvas images render **inline** and resize to the reading column. Image file links can request fresh authorized signed image URLs when an old source fails. The app does not automatically download/cache all images for offline use.
+- Tapping a Canvas file opens a **Pocket attachment viewer**. It requests `GET /api/v1/files/:id` and, if available, Canvas's official `GET /api/v1/files/:id/public_url` for an inline preview URL. Images and PDFs render within a dialog where supported, with **Open in Quercus** and **Download** as separate choices. If Canvas supplies a document-preview URL, other files may be previewable too.
+- **iOS limitation:** Apple's WebKit engine sometimes blocks or poorly renders inline PDFs, or Canvas may send a forced-download header. The viewer includes a Quercus fallback. A successful automated test of the URL logic is not proof that every PDF will display on every iPhone.
+- The signed file URL is handled directly in the phone's browser and not persisted in our backend. The Vercel relay only returns authorized read-only JSON metadata; file bytes do not pass through Vercel. PDFs and images still need internet to load unless separately cached by the browser.
+- Canvas page HTML is reconstructed using allowlisted safe DOM elements. Scripts, event handlers, and arbitrary embeds are never executed; only HTTPS resources are eligible for remote image or frame loading.
+
 ### Mobile exports and clickable page content
 
 The mobile app now supports **Export** (↧ in the header or More → Export my data):
