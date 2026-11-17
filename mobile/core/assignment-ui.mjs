@@ -97,8 +97,9 @@ function attachmentLinks(rawHtml,submittedAttachments){
   for(const file of submittedAttachments||[]){
     if(!/^\d+$/.test(String(file.id)))continue;
     out.set(String(file.id),{id:String(file.id),name:file.display_name||file.filename||'Submitted file',
-      url:file.html_url||'https://q.utoronto.ca/files/'+file.id+'/download'});
+      url:/^https:\/\//.test(String(file.html_url||''))?file.html_url:'https://q.utoronto.ca/files/'+file.id+'/download'});
   }
+  for(const [id,file] of out){ if(!/^https:\/\//.test(String(file.url)))file.url='https://q.utoronto.ca/files/'+id+'/download'; }
   if(!out.size)return '';
   return '<details class="reader-resources assignment-attachments"><summary>Attachments <span>'+out.size+
     '</span></summary><div class="reader-resource-links">'+[...out.values()].map(file=>
