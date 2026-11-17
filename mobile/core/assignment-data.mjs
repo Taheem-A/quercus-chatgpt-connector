@@ -41,6 +41,7 @@ export function assignmentInfo(snapshot,courseId,assignmentId) {
   else if(graded){status='Graded';statusCode='graded';}
   else if(submitted){status='Submitted';statusCode='submitted';}
   else if(missing){status='Missing';statusCode='missing';}
+  else if((raw?.submission_types||[]).some(t=>['none','not_graded'].includes(t))){status='No submission required';statusCode='excused';}
   else if(dueAt && Date.parse(dueAt)<Date.now()){status='Past due · no submission recorded';statusCode='overdue';}
   const groupId=raw?.assignment_group_id ?? null;
   const group=(cd.assignmentGroups||[]).find(g=>String(g.id)===String(groupId)) || null;
