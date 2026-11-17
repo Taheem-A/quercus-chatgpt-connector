@@ -18,7 +18,7 @@ It currently attempts to collect:
 - assignments, assignment groups, due dates, descriptions, overrides, and your submission state
 - submission history, scores, grades, missing/late/excused state, and rubric assessment data when Canvas exposes it
 - modules, module items, content details, and completion requirements
-- course pages plus full page bodies
+- course pages plus full page bodies, including Pages linked in Modules when the course-wide Pages list is disabled (subject to the student's API permissions)
 - announcements
 - discussion topics
 - calendar events and assignment calendar entries
@@ -144,6 +144,10 @@ Combines Canvas calendar events, assignment calendar items, planner items, and C
 ### Modules / Pages / Discussions / Quizzes / Messages
 
 Dedicated searchable views for each category.
+
+**Module-linked Pages:** Sync first completes module item lists (including partially embedded lists), then fetches each unique Page using its module `page_url`. This still runs if Canvas returns `404` for the course-wide `/pages` collection. The Pages view labels successful and unavailable bodies; no authentication bypass is attempted. Full text is included in ChatGPT Markdown and ZIP CSV exports when available. Unmodified source HTML is retained in the JSON snapshot and `csv/pages.csv`.
+
+A page may remain unavailable if the individual Page API endpoint denies the configured token. The course's Pages tab being hidden does not itself establish that individual module-linked pages are inaccessible.
 
 ### Grades & Submissions
 
