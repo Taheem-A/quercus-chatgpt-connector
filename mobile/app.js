@@ -244,40 +244,136 @@ async function exportSnapshot(format) {
   }
 }
 
-// The Canvas file API returns a download URL for files readable by this student.
-// Open that URL on the device (typically a signed Canvas/CDN link). No binary file
-// passes through Vercel, and the token never appears in a link or download URL.
-async function handleFileLink(event) {
-  const a = event.target.closest('a[data-canvas-file]');
-  if (!a || !content.contains(a) || !state.token || !navigator.onLine) return;
-  const id = a.dataset.canvasFile;
-  if (!/^\d+$/.test(id)) return;
-  event.preventDefault();
-  const fallback = a.href;
-  const popup = window.open('about:blank', '_blank');
-  if (popup) popup.document.body.textContent = 'Preparing Quercus file…';
+let previewRequestNumber = 0;
+function httpsUrl(candidate) {
   try {
-    const response = await new BrowserCanvasClient(state.token).getOne('/api/v1/files/' + id);
-    const link = response.data?.url;
-    const url = new URL(link || '');
-    if (url.protocol !== 'https:') throw new Error('Quercus did not provide a secure download URL.');
-    if (popup) {
-      popup.location.href = url.toString();
-    } else {
-      const notice = document.createElement('div');
-      notice.className = 'download-result';
-      const ready = document.createElement('a');
-      ready.href = url.toString();
-      ready.target = '_blank'; ready.rel = 'noopener noreferrer';
-      ready.textContent = 'Tap here to open attachment ' + id;
-      notice.appendChild(ready);
-      a.after(notice);
+    const u = new URL(candidate);
+    return u.protocol === 'https:' ? u.toString() : '';
+  } catch { return ''; }
+}
+
+function setPreviewAnchor(id, url) {
+  const anchor=$(id);
+  const safe=httpsUrl(url);
+  anchor.href=safe||'https://q.utoronto.ca/';
+  anchor.hidden=!safe;
+}
+
+async function authorizedFile(fileId) {
+  if (!state.token) throw new Error('Connect a Quercus API token to preview private files in Pocket.');
+  if (!navigator.onLine) throw new Error('The attachment is not stored offline. Connect to the internet to preview it.');
+  const client=new BrowserCanvasClient(state.token);
+  const metadata=(await client.getOne('/api/v1/files/'+fileId)).data;
+  if (!metadata || String(metadata.id)!==String(fileId)) throw new Error('Quercus did not return this file.');
+  let inline='';
+  try {
+    const result=await client.getOne('/api/v1/files/'+fileId+'/public_url');
+    inline=result.data?.public_url||'';
+  }catch {
+    // Not all courses support the public inline-preview endpoint. Use the
+    // standard metadata URL as a best-effort fallback.
+  }
+  return {metadata, inline};
+}
+
+async function handleFileLink(event) {
+  const target=event.target;
+  if(!(target instanceof Element))return;
+  const a=target.closest('a[data-canvas-file]');
+  if(!a || !content.contains(a))return;
+  const fileId=a.dataset.canvasFile;
+  if(!/^\d+$/.test(fileId))return;
+  event.preventDefault();
+
+  const original=httpsUrl(a.href)||'https://q.utoronto.ca/files/'+fileId;
+  const dialog=$('filePreviewDialog');
+  const body=$('filePreviewContent');
+  const status=$('filePreviewStatus');
+  const ticket=++previewRequestNumber;
+  body.replaceChildren();
+  $('filePreviewTitle').textContent=a.textContent?.trim().replace(/[↧›]+$/,'').trim()||'Quercus file';
+  status.textContent='Fetching an authorized inline preview from Quercus…';
+  setPreviewAnchor('filePreviewOriginal',original);
+  setPreviewAnchor('filePreviewDownload',original);
+  if(!dialog.open)dialog.showModal();
+
+  try {
+    const {metadata,inline}=await authorizedFile(fileId);
+    if(ticket!==previewRequestNumber||!dialog.open)return;
+    const view=describeFilePreview(metadata,inline,original);
+    $('filePreviewTitle').textContent=view.name;
+    setPreviewAnchor('filePreviewOriginal',view.origin||original);
+    setPreviewAnchor('filePreviewDownload',view.download||original);
+    if(!view.isPreviewable){
+      status.textContent='This file type has no supported in-app preview. You can open it in Quercus or download the original.';
+      return;
     }
-  } catch (error) {
-    if (popup) popup.location.href = fallback;
-    else alert('Automatic file access was unavailable. Open the original page in Quercus to download it.');
+    if(view.kind==='image'){
+      const image=document.createElement('img');
+      image.src=view.preview;image.alt=view.name;
+      image.className='preview-image';
+      image.referrerPolicy='no-referrer';
+      image.addEventListener('load',()=>{if(ticket===previewRequestNumber)status.textContent='Image preview';});
+      image.addEventListener('error',()=>{if(ticket===previewRequestNumber)status.textContent='The image could not load inside Pocket. Try Open in Quercus.';});
+      body.replaceChildren(image);
+    }else{
+      const iframe=document.createElement('iframe');
+      iframe.src=view.preview;
+      iframe.title='Preview of '+view.name;
+      iframe.className='preview-frame';
+      iframe.referrerPolicy='no-referrer';
+      iframe.setAttribute('loading','eager');
+      body.replaceChildren(iframe);
+      status.textContent=view.kind==='pdf'
+        ? 'PDF preview · scroll or zoom inside the viewer. If your iPhone cannot render it, use Open in Quercus.'
+        : 'Document preview · if your browser blocks it, use Open in Quercus.';
+    }
+  }catch(error){
+    if(ticket===previewRequestNumber){
+      status.textContent=error.message+'. You can still open the original in Quercus.';
+    }
   }
 }
+
+async function handleInlineImageFailure(event) {
+  const image=event.target;
+  if(!(image instanceof HTMLImageElement) || !content.contains(image))return;
+  if(image.dataset.canvasImageRetry)return;
+  image.dataset.canvasImageRetry='true';
+  const id=image.dataset.canvasImageFile;
+  const fallback=image.src;
+  if(id && /^\d+$/.test(id) && state.token && navigator.onLine){
+    try {
+      const {metadata,inline}=await authorizedFile(id);
+      if(!content.contains(image))return;
+      const view=describeFilePreview(metadata,inline,fallback);
+      if(view.preview && view.preview!==fallback){
+        image.src=view.preview;
+        return;
+      }
+    }catch {
+      // The image may require a full Quercus session, or be locked.
+    }
+  }
+  const anchor=document.createElement('a');
+  anchor.textContent='View image: '+(image.alt||'course image');
+  anchor.className='canvas-link';
+  anchor.target='_blank';
+  anchor.rel='noopener noreferrer';
+  const safe=httpsUrl(fallback);
+  if(safe)anchor.href=safe;
+  else anchor.href='https://q.utoronto.ca/';
+  if(id && /^\d+$/.test(id)){
+    anchor.dataset.canvasFile=id;
+    anchor.textContent='Preview image attachment: '+(image.alt||'course image');
+  }
+  image.replaceWith(anchor);
+}
+
+$('filePreviewDialog').addEventListener('close',()=>{
+  previewRequestNumber++;
+  $('filePreviewContent').replaceChildren();
+});
 
 function progressText(update) {
   const strip = $('liveSync');
