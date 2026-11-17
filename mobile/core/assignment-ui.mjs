@@ -128,7 +128,7 @@ export function buildAssignmentReader(snapshot,courseId,id){
   if(a.html && a.html.trim())content=renderCanvasContent(a.html).outerHTML;
   else if(a.descriptionText)content='<p class="assignment-plaintext">'+escape(a.descriptionText)+'</p>';
   else content='<p class="reader-empty">No assignment instructions were provided in the synced record. Open the original in Quercus to check for additional details.</p>';
-  const gradeDisplay=a.grade!=null?String(a.grade):a.score!=null?String(a.score)+' points':'Not graded';
+  const gradeDisplay=a.grade!=null?String(a.grade):a.score!=null?String(a.score)+' points':a.graded?'Not available in sync':'Not graded';
   const dueText=a.dueAt?formatDate(a.dueAt):'No due date';
   const details= [
     meta('Due',dueText),meta('Points',a.points??'Not specified'),
@@ -158,7 +158,7 @@ export function buildAssignmentReader(snapshot,courseId,id){
     '<article class="reader-document assignment-document"><h2>Instructions</h2>'+content+
     attachmentLinks(a.html,a.attachments)+'</article>'+
     '<div class="assignment-open-original"><a class="button" data-pocket-external href="'+escape(url)+
-    '" target="_blank" rel="noopener noreferrer">Open in Quercus'+(a.submitted?'':' to submit')+' ↗</a>'+
+    '" target="_blank" rel="noopener noreferrer">Open in Quercus'+(['open','overdue','missing'].includes(a.statusCode)?' to submit':'')+' ↗</a>'+
     '<p>Quercus Pocket is read-only. Submit work, edit submissions, and check final grading directly in Quercus.</p></div>'+
     '<nav class="reader-pagination" aria-label="Assignment navigation">'+
     button(previous,'previous')+button(next,'next')+'</nav></div>';
