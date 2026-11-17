@@ -17,8 +17,8 @@ The **mobile/** directory is a separate, installable Progressive Web App for rea
 1. On your laptop, run Quercus Local and **Sync Quercus**.
 2. From **Export**, download **Complete JSON** (preferred). ChatGPT Markdown (.md) also works in reading mode.
 3. Move the export to the iPhone using AirDrop, iCloud Drive, or a file transfer method you trust.
-4. Open the deployed Quercus Pocket HTTPS address in Safari, tap **Import**, and choose the saved file.
-5. In Safari, tap **Share → Add to Home Screen**. Open Quercus Pocket from its home-screen icon afterward. Its cached interface and imported snapshot remain usable offline.
+4. Open the deployed Quercus Pocket HTTPS address in **Safari**. Tap **Share → Add to Home Screen** and add it.
+5. Open Quercus Pocket from the **home-screen icon**, then tap **Import** and choose the saved file. Its cached interface and imported snapshot remain usable offline. Importing from the installed app avoids possible Safari/standalone storage separation on iPhone.
 6. When you want fresh data, run a new desktop sync and import a replacement export.
 
 The reader supports searchable assignments, course pages and their saved bodies, announcements, files/links, and course summaries when imported via Complete JSON. Markdown mode allows searching and reading exported course sections.
