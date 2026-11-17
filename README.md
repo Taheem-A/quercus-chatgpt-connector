@@ -6,6 +6,33 @@ It is designed for one job: **run it when you need it, click Sync Quercus, colle
 
 There is no cloud database, no Vercel requirement, no Docker, and no npm dependency install. The server uses Node.js built-ins and runs on `127.0.0.1` only.
 
+## iPhone and Android companion — Quercus Pocket
+
+The **mobile/** directory is a separate, installable Progressive Web App for reading your saved Quercus data without your laptop running.
+
+**Important distinction:** Quercus Local remains the desktop **live sync** app. Quercus Pocket is an **offline snapshot reader**. The static mobile site does not have your token, cannot run a live Canvas sync, and does not automatically update grades or deadlines. It makes existing course information available on a phone even with the laptop powered off.
+
+### How to use
+
+1. On your laptop, run Quercus Local and **Sync Quercus**.
+2. From **Export**, download **Complete JSON** (preferred). ChatGPT Markdown (.md) also works in reading mode.
+3. Move the export to the iPhone using AirDrop, iCloud Drive, or a file transfer method you trust.
+4. Open the deployed Quercus Pocket HTTPS address in Safari, tap **Import**, and choose the saved file.
+5. In Safari, tap **Share → Add to Home Screen**. Open Quercus Pocket from its home-screen icon afterward. Its cached interface and imported snapshot remain usable offline.
+6. When you want fresh data, run a new desktop sync and import a replacement export.
+
+The reader supports searchable assignments, course pages and their saved bodies, announcements, files/links, and course summaries when imported via Complete JSON. Markdown mode allows searching and reading exported course sections.
+
+**Privacy/security:** The mobile website is a static shell only. There are no API requests that upload course content, and its Content Security Policy forbids outgoing fetch connections. Imported course data lives in the phone's IndexedDB browser storage and is not committed to GitHub or stored in Vercel. The app includes an explicit **Delete saved data** option. Do not share the export itself publicly. Browser storage can be cleared or evicted by iOS; retain an original copy of the export. Quercus links may require U of T authentication and an internet connection.
+
+### Hosting
+
+Deploy the **public static code only** from `mobile/` to any HTTPS static host. For Vercel, create a separate project linked to this repository with **Root Directory = mobile**, **Framework Preset = Other**, and no environment variables. No paid plan or backend is required for this offline reader. **Do not deploy the root `server.mjs`**, which is intentionally loopback-only and has no remote-user authentication.
+
+A full independent live mobile sync requires a separately designed authenticated cloud backend and secure secret management; do not expose local port 3210 or upload `.env.local` or `.quercus-local.json`.
+
+---
+
 ## What it syncs
 
 The app performs a broad best-effort sync. A failure on one endpoint or one course does **not** stop the rest of the sync.

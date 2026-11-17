@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101d32">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Quercus Pocket">
+  <meta name="description" content="Private, offline-ready course reader for your Quercus exports">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Quercus Pocket</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="identity"><div class="mark">Q</div><div><strong>Quercus Pocket</strong><small>Private course reader</small></div></div>
+      <button id="importButton" class="icon-button" title="Import a new export" type="button" aria-label="Import Quercus export">↥</button>
+    </header>
+    <main id="main" class="main" tabindex="-1">
+      <section class="hero"><p class="eyebrow">YOUR UNIVERSITY, ANYWHERE</p><h1>Course overview</h1><p id="syncStatus" class="subtitle">Load an export to get started.</p></section>
+      <div class="search-wrap"><label class="sr-only" for="search">Search everything</label><input id="search" type="search" placeholder="Search courses, pages, deadlines…" autocomplete="off"></div>
+      <div id="content" aria-live="polite"></div>
+    </main>
+    <nav class="bottom-nav" aria-label="Sections">
+      <button data-view="home" class="selected" aria-current="page"><span>⌂</span>Home</button>
+      <button data-view="tasks"><span>☑</span>Tasks</button>
+      <button data-view="courses"><span>▦</span>Courses</button>
+      <button data-view="pages"><span>▤</span>Pages</button>
+      <button data-view="more"><span>☰</span>More</button>
+    </nav>
+  </div>
+  <dialog id="importDialog">
+    <form method="dialog" class="dialog-head"><strong>Import Quercus export</strong><button class="icon-button" aria-label="Close">✕</button></form>
+    <p>Import a <b>Complete JSON</b> export for the full experience, or a ChatGPT <b>.md</b> export for searchable text.</p>
+    <label class="upload-field">Choose JSON or Markdown export <input type="file" id="fileInput" accept=".json,.md,application/json,text/markdown,text/plain"></label>
+    <p class="hint">Stored only on this device. Nothing is uploaded to a server. The app continues working offline after installation.</p>
+    <p id="importMessage" role="status"></p>
+  </dialog>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
