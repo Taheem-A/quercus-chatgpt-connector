@@ -114,6 +114,7 @@ test('assignment detail shows grading/status, Quercus submission CTA and safe at
   assert.match(graded,/data-canvas-file="440"/);
   assert.doesNotMatch(graded,/javascript:alert/);
   assert.match(graded,/Open in Quercus/);
+  assert.match(graded,/data-pocket-external/, 'The submit link must bypass internal assignment routing');
   assert.match(graded,/read-only/);
   const due=buildAssignmentReader(sample,188,10);
   assert.match(due,/no submission recorded/);
