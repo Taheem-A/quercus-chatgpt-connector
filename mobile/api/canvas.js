@@ -31,6 +31,9 @@ function allowedPath(pathname) {
   // File metadata lookup, needed for links embedded in Canvas pages.
   // It returns an authorized temporary download URL, not file bytes.
   if (/^\/api\/v1\/files\/\d+$/.test(pathname)) return true;
+  // Canvas's documented read-only inline preview URL endpoint. Signed links
+  // are returned to this user only, never fetched or stored on Vercel.
+  if (/^\/api\/v1\/files\/\d+\/public_url$/.test(pathname)) return true;
   const match = /^\/api\/v1\/courses\/([0-9]+)(?:\/(.+))?$/.exec(pathname);
   if (!match) return false;
   const child = match[2] || '';
