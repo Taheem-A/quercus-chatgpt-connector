@@ -112,6 +112,9 @@ module.exports = async function handler(req, res) {
     if (upstream.status >= 300 && upstream.status < 400) {
       return reject(res, 502, 'Canvas unexpectedly redirected this API request.');
     }
+    // Canvas may return non-JSON HTML for disabled features; preserve the
+    // actual status for useful diagnostics without exposing response content.
+    if (!upstream.ok) return reject(res, upstream.status, 'Canvas API returned HTTP ' + upstream.status);
     const contentType = upstream.headers.get('content-type') || '';
     const responseLength = Number(upstream.headers.get('content-length') || 0);
     if (responseLength > MAX_JSON_RESPONSE) return reject(res, 502, 'Canvas response exceeds the safe size limit.');
