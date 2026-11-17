@@ -9,7 +9,7 @@ test('discovers and deduplicates Pages from Modules even without a Pages list', 
     pages: [],
     modules: [
       { id: 1, name: 'Week 10', items: [
-        { type: 'Page', page_url: 'assessment-schedule', title: 'Assessment Schedule' },
+        { type: 'Page', url: 'https://q.utoronto.ca/api/v1/courses/123/pages/assessment-schedule', page_url: 'assessment-schedule', html_url: 'https://q.utoronto.ca/courses/123/modules/items/99', title: 'Assessment Schedule' },
         { type: 'Page', page_url: 'checklist', title: 'Checklist' },
       ] },
       { id: 2, name: 'Resources', items: [
@@ -18,6 +18,7 @@ test('discovers and deduplicates Pages from Modules even without a Pages list', 
     ],
   }, 123, 'https://q.utoronto.ca');
   assert.equal(pages.length, 2);
+  assert.equal(pages[0].url, 'assessment-schedule', 'Canvas ModuleItem.url must not be used as the slug');
   assert.deepEqual(pages[0].module_names, ['Week 10', 'Resources']);
   assert.equal(pages[0].html_url, 'https://q.utoronto.ca/courses/123/pages/assessment-schedule');
 });
@@ -67,8 +68,8 @@ test('sync fetches module Page bodies when Pages list is 404 and embedded module
       }
       if (path === '/api/v1/courses/123/modules/55/items') {
         return { items: [
-          { id: 1, type: 'Page', page_url: 'lesson-one', title: 'Lesson One' },
-          { id: 2, type: 'Page', page_url: 'lesson-two', title: 'Lesson Two' },
+          { id: 1, type: 'Page', url: 'https://q.utoronto.ca/api/v1/courses/123/pages/lesson-one', page_url: 'lesson-one', title: 'Lesson One' },
+          { id: 2, type: 'Page', url: 'https://q.utoronto.ca/api/v1/courses/123/pages/lesson-two', page_url: 'lesson-two', title: 'Lesson Two' },
           { id: 3, type: 'Assignment', title: 'Quiz' },
         ], pages: 1 };
       }
@@ -83,6 +84,7 @@ test('sync fetches module Page bodies when Pages list is 404 and embedded module
   assert.deepEqual(calls.filter((p) => p === '/api/v1/courses/123/pages/lesson-one'), ['/api/v1/courses/123/pages/lesson-one']);
   assert.ok(snapshot.diagnostics.some((d) => d.path === '/api/v1/courses/123/pages' && !d.ok));
   assert.ok(snapshot.diagnostics.some((d) => d.path === '/api/v1/courses/123/pages/lesson-one' && d.ok));
+  assert.equal(calls.some((p) => p.includes(encodeURIComponent('https://q.utoronto.ca/api/'))), false, 'should never URL-encode an absolute API URL as a page slug');
 
   const chatgpt = makeMarkdown(snapshot, { chatgpt: true });
   assert.ok(chatgpt.includes(longText), 'Pages must not be silently truncated at 2200 characters');
