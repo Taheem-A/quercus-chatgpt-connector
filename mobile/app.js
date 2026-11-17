@@ -6,10 +6,12 @@ import { makeMobileExport, makeSavedMarkdownExport } from './core/mobile-export.
 import { pageRoute, courseRoute, parseReaderRoute, resolveSavedPageLink, savedPage } from './core/page-router.mjs';
 import { buildPageCatalog, buildPageReader } from './core/page-ui.mjs';
 import { describeFilePreview } from './core/attachment-preview.mjs';
+import { assignmentInfo, assignmentRoute, assignmentCourseRoute, parseAssignmentRoute, resolveSavedAssignmentLink } from './core/assignment-data.mjs';
+import { buildAssignmentCatalog, buildAssignmentReader } from './core/assignment-ui.mjs';
 
 const $ = id => document.getElementById(id);
 const content = $('content');
-const state = { snapshot:null, markdown:null, view:'home', query:'', course:'all', reader:null, token:null, syncing:false };
+const state = { snapshot:null, markdown:null, view:'home', query:'', course:'all', reader:null, assignmentCourse:'all', assignmentReader:null, assignmentFilter:'all', token:null, syncing:false };
 const DB_NAME = 'quercus-pocket-private';
 const DB_VERSION = 2;
 const MAX_FILE_BYTES = 40 * 1024 * 1024;
@@ -62,16 +64,13 @@ function snapshotHome(){
   const recent=announcements(snapshot).slice(0,4);
   return '<div class="stats"><div class="stat"><b>'+snapshot.courses.length+'</b><span>Courses</span></div><div class="stat"><b>'+due.filter(a=>dateValue(a.dueAt)<Date.now()+604800000).length+'</b><span>Due this week</span></div><div class="stat"><b>'+pages(snapshot).filter(p=>p.status==='retrieved').length+'</b><span>Pages synced</span></div></div>'+
     '<div class="notice">Your latest synced snapshot stays on this phone for offline access. Tap ⟳ to get fresh Quercus information whenever you have internet.</div>'+
-    section('Coming up',grouped(due.filter(a=>match(a.name,a.courseCode,a.descriptionText)),a=>card(a.name,readableDate(a.dueAt),link(a.htmlUrl), '',a.courseCode||a.courseName),5),due.length+' pending')+
+    section('Coming up',grouped(due.filter(a=>match(a.name,a.courseCode,a.descriptionText)),a=>card(a.name,readableDate(a.dueAt),'<button class="button outline" data-open-assignment-course="'+escapeHtml(a.courseId)+'" data-open-assignment-id="'+escapeHtml(a.id)+'">View assignment</button>', '',a.courseCode||a.courseName),5),due.length+' pending')+
     section('Latest announcements',grouped(recent.filter(a=>match(a.title,a.text,a.course)),a=>card(a.title,a.text.slice(0,260),link(a.url),'',a.course+' · '+readableDate(a.date)),4));
 }
 function snapshotTasks(){
-  const arr=assignments(state.snapshot).filter(a=>match(a.name,a.courseCode,a.courseName,a.descriptionText));
-  arr.sort((a,b)=>dateValue(a.dueAt)-dateValue(b.dueAt));
-  const future=arr.filter(a=>dateValue(a.dueAt)>=Date.now()&&!a.excused&&a.dueAt);
-  const other=arr.filter(a=>dateValue(a.dueAt)<Date.now()||!a.dueAt);
-  return section('Upcoming deadlines',grouped(future,a=>card(a.name,readableDate(a.dueAt)+(a.submitted?' · Submitted':' · Not submitted'),a.descriptionText?'<details><summary>Assignment details</summary><div class="body-text">'+escapeHtml(a.descriptionText)+'</div></details>':'',link(a.htmlUrl),a.courseCode||a.courseName)))+
-    section('Earlier and undated',grouped(other.slice().reverse(),a=>card(a.name,(a.dueAt?readableDate(a.dueAt):'No deadline')+(a.submitted?' · Submitted':''), '',link(a.htmlUrl),a.courseCode||a.courseName),35),'Review submission status in Quercus');
+  return state.assignmentReader
+    ? buildAssignmentReader(state.snapshot,state.assignmentReader.courseId,state.assignmentReader.id)
+    : buildAssignmentCatalog(state.snapshot,state.assignmentCourse,state.query,state.assignmentFilter);
 }
 function snapshotCourses(){
   const arr=state.snapshot.courses.filter(c=>match(c.name,c.course_code,c.term?.name));
@@ -79,7 +78,7 @@ function snapshotCourses(){
     const cd=state.snapshot.courseData?.[c.id]||{};
     const grade=(state.snapshot.derived?.grades||[]).find(g=>String(g.courseId)===String(c.id));
     const grades=grade?.currentGrade||grade?.currentScore;
-    return card(courseName(c),c.name||'Course','<span class="pill">'+(cd.modules||[]).length+' modules</span> <span class="pill muted">'+(cd.pages||[]).length+' pages</span>'+(grades!==undefined?' <span class="pill">Grade '+escapeHtml(grades)+'</span>':''),'<button class="button outline" data-course="'+escapeHtml(c.id)+'">View pages</button>',c.term?.name||'');
+    return card(courseName(c),c.name||'Course','<span class="pill">'+(cd.modules||[]).length+' modules</span> <span class="pill muted">'+(cd.pages||[]).length+' pages</span>'+(grades!==undefined?' <span class="pill">Grade '+escapeHtml(grades)+'</span>':''),'<div class="assignment-course-actions"><button class="button outline" data-course="'+escapeHtml(c.id)+'">View pages</button><button class="button outline" data-go-assignment-course="'+escapeHtml(c.id)+'">View assignments</button></div>',c.term?.name||'');
   }));
 }
 // Safe Canvas HTML renderer: preserves links without trusting raw course markup.
@@ -128,7 +127,7 @@ function markdownHome(){
 }
 function render(){
   updateHeader();
-  $('main').classList.toggle('reader-mode', Boolean(state.reader && state.view==='pages'));
+  $('main').classList.toggle('reader-mode', Boolean((state.reader && state.view==='pages') || (state.assignmentReader && state.view==='tasks')));
   if(!state.snapshot&&!state.markdown){
     content.innerHTML=empty('Connect directly to Quercus','Sync your course data from your phone with no laptop required.')+
       '<div class="cta"><button class="button" id="firstConnect">Connect and sync Quercus</button><button class="button outline" id="firstImport">Import a saved export</button></div>'+
@@ -144,26 +143,29 @@ function render(){
     handleInlineImageFailure({target:image}));
   const courseSelect=$('pageCourse');if(courseSelect)courseSelect.addEventListener('change',e=>{state.course=e.target.value;render()});
   document.querySelectorAll('[data-course]').forEach(b=>b.addEventListener('click',()=>navigateCourse(b.dataset.course)));
+  document.querySelectorAll('[data-assignment-filter]').forEach(b=>b.addEventListener('click',()=>{
+    state.assignmentFilter=b.dataset.assignmentFilter;render();
+  }));
   $('refreshExport')?.addEventListener('click',openImport);
   $('openExportMore')?.addEventListener('click',openExport);
   $('syncAgain')?.addEventListener('click',()=>state.token?startLiveSync():openConnect());
   $('changeToken')?.addEventListener('click',openConnect);
   $('forgetToken')?.addEventListener('click',async()=>{await dbForgetToken();state.token=null;alert('Saved access token cleared from this device.');});
-  $('clearData')?.addEventListener('click',async()=>{if(!confirm('Delete all imported Quercus data AND your saved access token from this phone?'))return;await dbClear();state.token=null;state.snapshot=null;state.markdown=null;state.course='all';state.view='home';render()});
+  $('clearData')?.addEventListener('click',async()=>{if(!confirm('Delete all imported Quercus data AND your saved access token from this phone?'))return;await dbClear();state.token=null;state.snapshot=null;state.markdown=null;state.reader=null;state.assignmentReader=null;state.assignmentCourse='all';state.course='all';state.view='home';render()});
 }
 function navigateCourse(courseId) {
   if (!state.snapshot) return;
   const c = (state.snapshot.courses || []).find(x => String(x.id) === String(courseId));
   if (!c) return;
   history.pushState({pocket:true}, '', courseRoute(courseId));
-  state.view='pages';state.course=String(courseId);state.reader=null;
+  state.view='pages';state.course=String(courseId);state.reader=null;state.assignmentReader=null;
   state.query='';$('search').value='';
   render();window.scrollTo(0,0);
 }
 function navigatePage(courseId,slug) {
   if (!savedPage(state.snapshot, courseId, slug)) return;
   history.pushState({pocket:true}, '', pageRoute(courseId, slug));
-  state.view='pages';state.course=String(courseId);
+  state.view='pages';state.course=String(courseId);state.assignmentReader=null;
   state.reader={courseId:String(courseId),slug:String(slug)};
   state.query='';$('search').value='';
   render();window.scrollTo(0,0);
@@ -176,19 +178,56 @@ function navigatePageLibrary() {
   state.reader=null;state.view='pages';state.query='';$('search').value='';
   render();window.scrollTo(0,0);
 }
+function navigateAssignmentCourse(courseId){
+  if(!state.snapshot || !(state.snapshot.courses||[]).some(c=>String(c.id)===String(courseId)))return;
+  history.pushState({pocket:true},'',assignmentCourseRoute(courseId));
+  state.view='tasks';state.reader=null;state.assignmentReader=null;
+  state.assignmentCourse=String(courseId);
+  state.query='';$('search').value='';
+  render();window.scrollTo(0,0);
+}
+function navigateAssignment(courseId,id){
+  if(!assignmentInfo(state.snapshot,courseId,id))return;
+  history.pushState({pocket:true},'',assignmentRoute(courseId,id));
+  state.view='tasks';state.reader=null;state.assignmentCourse=String(courseId);
+  state.assignmentReader={courseId:String(courseId),id:String(id)};
+  state.query='';$('search').value='';
+  render();window.scrollTo(0,0);
+}
+function navigateAssignmentLibrary(){
+  history.pushState({pocket:true},'','#/assignments');
+  state.view='tasks';state.reader=null;state.assignmentReader=null;
+  state.assignmentCourse='all';state.assignmentFilter='all';
+  state.query='';$('search').value='';
+  render();window.scrollTo(0,0);
+}
 function restoreReaderRoute() {
+  const assignmentRouteInfo=parseAssignmentRoute(location.hash);
+  if (state.snapshot && assignmentRouteInfo) {
+    if(!(state.snapshot.courses||[]).some(c=>String(c.id)===assignmentRouteInfo.courseId))return;
+    state.assignmentCourse=assignmentRouteInfo.courseId;
+    state.assignmentReader=assignmentRouteInfo.id && assignmentInfo(state.snapshot,assignmentRouteInfo.courseId,assignmentRouteInfo.id)
+      ? assignmentRouteInfo : null;
+    state.reader=null;state.view='tasks';
+    render();return;
+  }
+  if (state.snapshot && location.hash==='#/assignments') {
+    state.assignmentReader=null;state.assignmentCourse='all';state.reader=null;state.view='tasks';
+    render();return;
+  }
   const route = parseReaderRoute(location.hash);
   if (route && state.snapshot) {
     const known = (state.snapshot.courses || []).some(c=>String(c.id)===route.courseId);
     if (!known) return;
+    state.assignmentReader=null;
     state.course=route.courseId;
     state.reader=route.slug && savedPage(state.snapshot,route.courseId,route.slug)
       ? route : null;
     state.view='pages';
   } else if(location.hash==='#/pages' && state.snapshot) {
-    state.reader=null;state.course='all';state.view='pages';
-  } else if(state.reader){
-    state.reader=null;
+    state.assignmentReader=null;state.reader=null;state.course='all';state.view='pages';
+  } else {
+    state.reader=null;state.assignmentReader=null;
   }
   render();
 }
@@ -214,7 +253,7 @@ async function importFile(file){
     await dbWrite({kind:'markdown',value:text});
     state.markdown=text;state.snapshot=null;
   } else throw new Error('Choose the Complete JSON (.json) or ChatGPT Markdown (.md) Quercus export.');
-  state.reader=null;state.view='home';state.course='all';state.query='';$('search').value='';
+  state.reader=null;state.assignmentReader=null;state.assignmentCourse='all';state.assignmentFilter='all';state.view='home';state.course='all';state.query='';$('search').value='';
   $('importDialog').close();render();
 }
 
@@ -409,7 +448,8 @@ async function startLiveSync() {
     state.markdown = null;
     state.view = 'home';
     state.reader = null;
-    if(location.hash.startsWith('#/course/'))history.replaceState({},'',location.pathname+location.search);
+    state.assignmentReader=null;state.assignmentCourse='all';state.assignmentFilter='all';
+    if(location.hash.startsWith('#/assignments')||location.hash.startsWith('#/course/'))history.replaceState({},'',location.pathname+location.search);
     state.course = 'all';
     state.query = '';
     $('search').value = '';
@@ -462,6 +502,21 @@ document.querySelectorAll('[data-export]').forEach(button => button.addEventList
 content.addEventListener('click',event=>{
   const target=event.target;
   if (!(target instanceof Element)) return;
+  const assignButton=target.closest('[data-open-assignment-course][data-open-assignment-id]');
+  if(assignButton&&content.contains(assignButton)){
+    event.preventDefault();navigateAssignment(assignButton.dataset.openAssignmentCourse,assignButton.dataset.openAssignmentId);return;
+  }
+  const assignCourse=target.closest('[data-go-assignment-course]');
+  if(assignCourse&&content.contains(assignCourse)){
+    event.preventDefault();navigateAssignmentCourse(assignCourse.dataset.goAssignmentCourse);return;
+  }
+  const backAssignments=target.closest('[data-back-assignments]');
+  if(backAssignments&&content.contains(backAssignments)){
+    event.preventDefault();
+    if(state.assignmentReader)navigateAssignmentCourse(state.assignmentReader.courseId);
+    else navigateAssignmentLibrary();
+    return;
+  }
   const pageButton=target.closest('[data-open-page-course][data-open-page-slug]');
   if(pageButton && content.contains(pageButton)){
     event.preventDefault();navigatePage(pageButton.dataset.openPageCourse,pageButton.dataset.openPageSlug);return;
@@ -477,9 +532,11 @@ content.addEventListener('click',event=>{
     return;
   }
   const link=target.closest('a[href]');
-  if(link && !link.hasAttribute('data-canvas-file') && content.contains(link) && state.snapshot){
+  if(link && !link.hasAttribute('data-canvas-file') && !link.hasAttribute('data-pocket-external') && content.contains(link) && state.snapshot){
+    const assignment=resolveSavedAssignmentLink(state.snapshot,link.getAttribute('href'),link.dataset.canvasApiEndpoint || '');
+    if(assignment){event.preventDefault();navigateAssignment(assignment.courseId,assignment.id);return;}
     const resolved=resolveSavedPageLink(state.snapshot,link.getAttribute('href'),
-      state.reader?.courseId || state.course,link.dataset.canvasApiEndpoint || '');
+      state.reader?.courseId || state.assignmentReader?.courseId || state.course,link.dataset.canvasApiEndpoint || '');
     if(resolved){
       event.preventDefault();navigatePage(resolved.courseId,resolved.slug);return;
     }
@@ -491,7 +548,9 @@ $('fileInput').addEventListener('change',async event=>{try{await importFile(even
 $('search').addEventListener('input',e=>{state.query=e.target.value.toLowerCase().trim();render()});
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{
   if(location.hash.startsWith('#/'))history.pushState({pocket:true},'',location.pathname+location.search);
-  state.reader=null;state.view=b.dataset.view;render();scrollTo(0,0);
+  state.reader=null;state.assignmentReader=null;
+  if(b.dataset.view==='tasks')state.assignmentCourse='all';
+  state.view=b.dataset.view;render();scrollTo(0,0);
 }));
 window.addEventListener('popstate',restoreReaderRoute);
 window.addEventListener('hashchange',restoreReaderRoute);

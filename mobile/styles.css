@@ -144,3 +144,51 @@
  .preview-content{background:#0f1e31}.file-preview-dialog .preview-header,.preview-actions{border-color:#32465e}
  .preview-status{color:#adbbcb}.preview-header .icon-button{background:#293c50;color:#fff}
 }
+
+/* Course-based assignment library and rich assignment detail reader */
+.assignment-filters{display:flex;gap:7px;overflow-x:auto;padding:0 0 13px;scrollbar-width:none}
+.assignment-filters::-webkit-scrollbar{display:none}
+.assignment-filters button{border:1px solid #d7e2e8;border-radius:999px;background:#fff;color:#587085;padding:8px 12px;white-space:nowrap;font-size:12px;font-weight:650}
+.assignment-filters button.active{border-color:#15796e;background:#dff3ec;color:#126c61}
+.assignment-course-list{margin-top:4px}
+.assignment-course-meta{color:#657a90;font-size:11px;white-space:nowrap;flex-shrink:0}
+.assignment-row .reader-page-title{display:flex;flex-direction:column;gap:5px}
+.assignment-row .reader-page-title b{font-size:13px;font-weight:650;line-height:1.4;overflow-wrap:anywhere}
+.assignment-row .reader-page-title small{font-size:11px;color:#75879b;line-height:1.35}
+.assignment-status{display:inline-block;max-width:136px;padding:5px 8px;border-radius:7px;font-size:10px;font-weight:750;line-height:1.35;text-align:center;flex-shrink:0;color:#5e7187;background:#eef1f5;overflow-wrap:anywhere}
+.assignment-status.status-submitted{background:#e1f1f7;color:#1b708f}
+.assignment-status.status-graded{background:#def3e8;color:#167350}
+.assignment-status.status-missing,.assignment-status.status-overdue{background:#fff0e0;color:#995717}
+.assignment-status.status-excused{background:#e9eaf0;color:#58657a}
+.assignment-state{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-9px 0 15px}
+.assignment-state .assignment-status{font-size:12px;padding:7px 10px;max-width:none}
+.assignment-metadata{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 18px}
+.assignment-meta-item{background:#fff;border:1px solid #e0e8ee;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.assignment-meta-item small{color:#6c7c8c;font-size:11px}
+.assignment-meta-item b{font-size:13px;font-weight:700;color:#263d50;line-height:1.4;overflow-wrap:anywhere}
+.assignment-extra{border:1px solid #dfe8ed;background:#fff;border-radius:12px;margin-bottom:18px;padding:12px}
+.assignment-extra summary{cursor:pointer;font-size:13px;color:#19786d;font-weight:750}
+.assignment-extra .assignment-metadata{margin:14px 0 0}
+.assignment-document h2{font-size:19px;color:inherit;margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid #e5ebef}
+.assignment-document .assignment-plaintext{white-space:pre-wrap;line-height:1.75;font-size:14px;margin:0;color:#34495a}
+.assignment-attachments{margin-top:25px}
+.assignment-open-original{display:flex;flex-direction:column;gap:8px;margin:18px 0}
+.assignment-open-original .button{display:block;text-align:center;max-width:360px}
+.assignment-open-original p{font-size:12px;color:#73849a;line-height:1.55;margin:0}
+.assignment-course-actions{display:flex;flex-wrap:wrap;gap:8px}
+.assignment-course-actions button{flex:1 1 135px}
+@media(max-width:430px){
+ .assignment-row{gap:9px;padding:12px 10px}
+ .assignment-row .assignment-status{max-width:110px;font-size:9px;padding:4px 6px}
+ .assignment-course-meta{max-width:110px;white-space:normal;text-align:right;line-height:1.4}
+}
+@media(prefers-color-scheme:dark){
+ .assignment-filters button,.assignment-meta-item,.assignment-extra{background:#17263b;border-color:#30445e;color:#cedbeb}
+ .assignment-filters button.active{background:#1e4d45;border-color:#2b927f;color:#b5f4e2}
+ .assignment-meta-item small,.assignment-row .reader-page-title small{color:#adbbcb}
+ .assignment-meta-item b,.assignment-document .assignment-plaintext{color:#e2edf7}
+ .assignment-document h2{border-color:#30445e}
+ .assignment-status.status-submitted{background:#173b55;color:#9ed9ed}
+ .assignment-status.status-graded{background:#154c39;color:#b0eccc}
+ .assignment-status.status-overdue,.assignment-status.status-missing{background:#54351c;color:#f9d5a0}
+}

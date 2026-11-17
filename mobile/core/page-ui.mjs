@@ -93,7 +93,7 @@ export function buildPageReader(snapshot, courseId, slug) {
     '<div class="reader-empty">This page was discovered, but its body could not be retrieved. You can try opening the original page in Quercus.</div>';
   const resourceSection = page.html ? resourceList(page.html) : '';
   const source = page.href && /^https:\/\//.test(page.href) ?
-    '<a class="reader-source" href="' + escape(page.href) + '" target="_blank" rel="noopener noreferrer">Open original in Quercus ↗</a>' : '';
+    '<a class="reader-source" data-pocket-external href="' + escape(page.href) + '" target="_blank" rel="noopener noreferrer">Open original in Quercus ↗</a>' : '';
   const navButton = (item, direction) => item ?
     '<button type="button" class="reader-step ' + direction + '" data-open-page-course="' +
     escape(courseId) + '" data-open-page-slug="' + escape(item.slug) +

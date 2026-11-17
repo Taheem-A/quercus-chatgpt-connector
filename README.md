@@ -47,6 +47,18 @@ The Pages tab now provides a **course → Modules → Pages** hierarchy instead 
 - The signed file URL is handled directly in the phone's browser and not persisted in our backend. The Vercel relay only returns authorized read-only JSON metadata; file bytes do not pass through Vercel. PDFs and images still need internet to load unless separately cached by the browser.
 - Canvas page HTML is reconstructed using allowlisted safe DOM elements. Scripts, event handlers, and arbitrary embeds are never executed; only HTTPS resources are eligible for remote image or frame loading.
 
+### Assignment library and rich assignment details
+
+The old mobile **Tasks** card list has been replaced with an **Assignments** tab designed like the new Pages reader:
+
+- **Assignments → Course → Assignment group → Assignment**. It displays the actual Canvas assignment groups and names; ungrouped assignments remain findable in Other assignments.
+- Browse or search by course, assignment title and full instructions. Filter assignments by **All, Not submitted, Submitted, and Graded**.
+- A dedicated assignment reading view contains the full **Canvas description HTML**, safely rendered with the same images, links, internal navigation, and file previews as Pages.
+- The detail view also shows **due date, points, submission status, grade/score**, and when provided **available-from / lock dates, submission types, attempt count, grading/submission timestamps, late status**, and the Module(s) referencing the assignment. Status comes from the student's captured Canvas submission record; Pocket is not a replacement for Quercus grading.
+- Assignment links in saved Pages and Module-item redirects now navigate into the Pocket assignment reader when that assignment is available in the offline snapshot. The Home screen's upcoming assignment cards also link directly to the detail reader. Course cards offer **View assignments** next to **View pages**.
+- Browser back and deep links work for assignment courses and assignment details. Assignment data remains stored in the existing on-device snapshot and is included in the existing JSON/Markdown/ZIP exports.
+- **Read-only boundary:** The reader has an **Open in Quercus to submit** action; uploading files or submitting an assignment is still done in Quercus. Missing or inaccessible assignment details may require opening the original Canvas page.
+
 ### Mobile exports and clickable page content
 
 The mobile app now supports **Export** (↧ in the header or More → Export my data):
