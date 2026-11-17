@@ -34,6 +34,7 @@ export function pages(snapshot) {
       return {
         courseId: c.id, course: courseName(c), title: detail.title || p.title || p.url,
         url: detail.html_url || p.html_url, module: (p.module_names || []).join(', '),
+        html: detail.body ?? p.body ?? '',
         text: htmlText(detail.body ?? p.body ?? ''),
         status: p.content_status || (typeof detail.body === 'string' ? 'retrieved' : 'unavailable'),
       };

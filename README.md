@@ -35,7 +35,23 @@ Direct browser-to-Quercus API calls may be blocked by cross-origin browser polic
 
 The phone service worker caches the mobile app and its sync code. Successful snapshots stay on the phone for offline browsing. Manually importing Complete JSON or ChatGPT Markdown exports remains optional; **a desktop export is no longer required for phone sync**.
 
-Canvas-linked binary course files are not downloaded in bulk; opening them can require internet access and a Quercus login. The app is read-only and does not submit assignments or modify course data. iOS can evict browser storage; keep backups when important.
+### Mobile exports and clickable page content
+
+The mobile app now supports **Export** (↧ in the header or More → Export my data):
+
+- **Complete JSON** — directly importable into Quercus Pocket or desktop tools, with original HTML page bodies retained.
+- **ChatGPT Markdown** — the comprehensive course context, including complete accessible Page contents and document links.
+- **Readable Markdown** — the shorter coursework summary.
+- **Calendar ICS** — assignment and Canvas calendar dates.
+- **Complete ZIP** — JSON, Markdown, CSV tables, and ICS, generated fully on the device. ZIP uses the portable STORE format (not compressed). The ZIP does not automatically contain external binary attachments.
+
+On iPhone, use the native Share sheet to **Save to Files**, AirDrop, or send an export to another device. If native sharing is unavailable, the export screen also provides a Save link. No private export file is sent to Vercel.
+
+Pages now show **sanitized, clickable rich content** rather than only flattened plain text. Hyperlinks to other Quercus pages, external resources, and course files remain usable. The page reader also lists its discovered attachments and external links below the page body. Original page HTML is stored in the snapshot and rendered only through an allowlisted DOM builder: active HTML elements and event-handler attributes are discarded. Do not render arbitrary Canvas HTML directly with innerHTML.
+
+**File access:** When you tap a Canvas file link while online with a token configured, the mobile app fetches its File object using the authorized read-only GET /api/v1/files/:id via the relay. That metadata may provide a time-limited signed download URL. The browser opens that URL directly; file bytes do **not** pass through Vercel. If Quercus cannot provide a usable URL, the app falls back to the original Quercus link and your existing university session can still handle the download. Certain files may be locked, require Quercus login, or not be accessible via the student token; the app cannot bypass those restrictions.
+
+Canvas-linked binary course files are not downloaded in bulk or cached offline automatically. The app is read-only and does not submit assignments or modify course data. iOS can evict browser storage; keep backups when important.
 
 ---
 

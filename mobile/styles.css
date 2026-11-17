@@ -25,3 +25,26 @@
 #connectNow{width:100%;margin-top:12px}
 #connectMessage{color:#b94d37;font-size:13px;min-height:18px}
 @media(prefers-color-scheme:dark){.sync-strip{background:#153b38;border-color:#23665e;color:#ccf2e7}.token-label{color:#dfe9f3}.token-input{background:#152239;color:#fff;border-color:#586677}}
+
+/* Mobile export menu and Canvas rich-content links */
+.export-options{display:grid;gap:9px;margin:15px 0}
+.export-options .button{text-align:left;width:100%}
+.export-options .button:disabled{opacity:.4;cursor:not-allowed}
+.export-ready{display:block;margin:14px 0;text-align:center;text-decoration:none}
+.download-result{background:#e7f5f0;padding:10px;border-radius:8px;margin-top:10px;font-size:13px;overflow-wrap:anywhere}
+.canvas-rich{font-size:14px;line-height:1.65;overflow-wrap:anywhere}
+.canvas-rich h1,.canvas-rich h2,.canvas-rich h3,.canvas-rich h4,.canvas-rich h5,.canvas-rich h6{color:inherit;margin:16px 0 8px;line-height:1.35}
+.canvas-rich h1{font-size:20px}.canvas-rich h2{font-size:18px}.canvas-rich h3{font-size:16px}
+.canvas-rich p{margin:9px 0;color:inherit}
+.canvas-rich ul,.canvas-rich ol{padding-left:23px;margin:10px 0}
+.canvas-rich li{margin:5px 0}
+.canvas-rich a,.resource-list a{color:#147b75!important;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
+.canvas-rich a.canvas-file,.resource-list a.canvas-file{font-weight:650}
+.canvas-rich code,.canvas-rich pre{font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;background:#eef1f5;padding:3px;border-radius:5px}
+.canvas-rich pre{padding:12px}
+.canvas-rich blockquote{border-left:3px solid #56aaa0;margin:12px 0;padding-left:13px}
+.canvas-rich table{border-collapse:collapse;display:block;max-width:100%;overflow:auto;margin:12px 0}
+.canvas-rich th,.canvas-rich td{border:1px solid #d5dfe6;padding:7px 9px;text-align:left;font-size:13px}
+.card details h4{margin:16px 0 7px;font-size:13px}
+.resource-list{padding-left:20px;margin:4px 0 9px}.resource-list li{font-size:13px;margin:7px 0}
+@media(prefers-color-scheme:dark){.download-result{background:#183c37}.canvas-rich code,.canvas-rich pre{background:#253448}.canvas-rich th,.canvas-rich td{border-color:#405167}.canvas-rich a,.resource-list a{color:#6bcdc4!important}}
