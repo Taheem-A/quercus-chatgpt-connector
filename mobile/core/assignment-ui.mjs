@@ -157,7 +157,7 @@ export function buildAssignmentReader(snapshot,courseId,id){
     (extra.length?'<details class="assignment-extra"><summary>More assignment details</summary><div class="assignment-metadata">'+extra.join('')+'</div></details>':'')+
     '<article class="reader-document assignment-document"><h2>Instructions</h2>'+content+
     attachmentLinks(a.html,a.attachments)+'</article>'+
-    '<div class="assignment-open-original"><a class="button" href="'+escape(url)+
+    '<div class="assignment-open-original"><a class="button" data-pocket-external href="'+escape(url)+
     '" target="_blank" rel="noopener noreferrer">Open in Quercus'+(a.submitted?'':' to submit')+' ↗</a>'+
     '<p>Quercus Pocket is read-only. Submit work, edit submissions, and check final grading directly in Quercus.</p></div>'+
     '<nav class="reader-pagination" aria-label="Assignment navigation">'+
