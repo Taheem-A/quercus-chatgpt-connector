@@ -15,8 +15,12 @@ const byDate = (a,b) => {
 
 function submissionFor(cd,raw) {
   const embedded=raw?.submission;
-  if(embedded && typeof embedded==='object') return embedded;
-  return (cd?.submissions || []).find(x=>String(x.assignment_id)===String(raw?.id)) || null;
+  const separate=(cd?.submissions || []).find(x=>String(x.assignment_id)===String(raw?.id)) || null;
+  if(!embedded || typeof embedded!=='object')return separate;
+  if(!separate)return embedded;
+  // Keep fields from the detailed submissions endpoint when the embedded
+  // assignment submission lacks them; never erase values with undefined.
+  return {...separate,...Object.fromEntries(Object.entries(embedded).filter(([,value])=>value!=null))};
 }
 
 export function assignmentInfo(snapshot,courseId,assignmentId) {
@@ -33,15 +37,17 @@ export function assignmentInfo(snapshot,courseId,assignmentId) {
   const graded=Boolean((submission?.score ?? derived?.score) !== null && (submission?.score ?? derived?.score) !== undefined ||
     (submission?.grade ?? derived?.grade) != null);
   const excused=Boolean(submission?.excused ?? derived?.excused);
-  const missing=Boolean(submission?.missing ?? derived?.missing);
+  // Derived "missing" can be inferred from the due date, so only label an
+  // assignment Missing if Quercus explicitly marks its submission missing.
+  const missing=Boolean(submission?.missing);
   const dueAt=raw?.due_at ?? derived?.dueAt ?? null;
   let status='Not submitted';
   let statusCode='open';
   if(excused){status='Excused';statusCode='excused';}
   else if(graded){status='Graded';statusCode='graded';}
   else if(submitted){status='Submitted';statusCode='submitted';}
-  else if(missing){status='Missing';statusCode='missing';}
   else if((raw?.submission_types||[]).some(t=>['none','not_graded'].includes(t))){status='No submission required';statusCode='excused';}
+  else if(missing){status='Missing';statusCode='missing';}
   else if(dueAt && Date.parse(dueAt)<Date.now()){status='Past due · no submission recorded';statusCode='overdue';}
   const groupId=raw?.assignment_group_id ?? null;
   const group=(cd.assignmentGroups||[]).find(g=>String(g.id)===String(groupId)) || null;
