@@ -5,7 +5,7 @@ const TAGS = new Set([
   'p', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'b', 'em', 'i',
   'u', 's', 'small', 'ul', 'ol', 'li', 'br', 'hr', 'blockquote', 'pre', 'code',
   'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption', 'sup', 'sub',
-  'dl', 'dt', 'dd',
+  'dl', 'dt', 'dd', 'figure', 'figcaption',
 ]);
 const SKIP = new Set([
   'script', 'style', 'object', 'embed', 'form', 'input', 'button',
@@ -97,23 +97,35 @@ export function renderCanvasContent(rawHtml) {
     }
     if (tag === 'img') {
       const info = classifyCanvasLink(node.getAttribute('src'), node.getAttribute('data-api-endpoint'));
-      const alt = node.getAttribute('alt') || 'Image';
-      if (parent.localName === 'a') {
-        // Avoid invalid nested anchors in a linked Canvas image.
-        parent.appendChild(document.createTextNode('🖼 ' + alt));
-      } else if (info) {
-        const anchor = makeSafeAnchor(info);
-        anchor.textContent = '🖼 ' + alt + ' (view image)';
-        parent.appendChild(anchor);
-      } else {
+      const alt = node.getAttribute('alt') || 'Course image';
+      const originalSrc = node.getAttribute('src');
+      const source = safeHttpUrl(originalSrc, QUERCUS);
+      if (!source && !info?.fileId) {
         parent.appendChild(document.createTextNode('[Image: ' + alt + ']'));
+        return;
       }
+      const img = document.createElement('img');
+      img.className = 'course-inline-image';
+      img.alt = alt;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.referrerPolicy = 'no-referrer';
+      // The original Canvas HTML may have custom widths; our CSS constrains
+      // images to the reader column so text and images do not overflow.
+      const width = Number(node.getAttribute('width'));
+      if (Number.isInteger(width) && width > 0 && width <= 1800) img.style.maxWidth = width + 'px';
+      if (info?.fileId) img.dataset.canvasImageFile = info.fileId;
+      if (source) img.src = source;
+      else img.dataset.canvasImagePending = 'true';
+      parent.appendChild(img);
       return;
     }
     if (tag === 'a') {
       const info = classifyCanvasLink(node.getAttribute('href'), node.getAttribute('data-api-endpoint'));
       if (info) {
         const anchor = makeSafeAnchor(info);
+        const endpoint = node.getAttribute('data-api-endpoint');
+        if (endpoint && endpoint.length < 2048) anchor.dataset.canvasApiEndpoint = endpoint;
         for (const child of node.childNodes) clone(child, anchor, depth + 1);
         if (!anchor.textContent.trim()) anchor.textContent = info.kind === 'file' ? 'Download attachment' : info.url;
         if (info.kind === 'file') anchor.appendChild(document.createTextNode(' ↧'));

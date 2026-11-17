@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Quercus Pocket">
   <meta name="description" content="Sync Quercus directly from your phone, with offline access to saved courses">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; frame-src https: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
@@ -41,6 +41,21 @@
       <button data-view="more"><span>☰</span>More</button>
     </nav>
   </div>
+  <dialog id="filePreviewDialog" class="file-preview-dialog" aria-label="Attachment preview">
+    <div class="preview-header">
+      <div class="preview-heading">
+        <small>QUERCUS ATTACHMENT</small>
+        <strong id="filePreviewTitle">Preview attachment</strong>
+      </div>
+      <form method="dialog"><button class="icon-button" type="submit" aria-label="Close preview">✕</button></form>
+    </div>
+    <p id="filePreviewStatus" class="preview-status" role="status" aria-live="polite">Loading…</p>
+    <div id="filePreviewContent" class="preview-content"></div>
+    <div class="preview-actions">
+      <a id="filePreviewOriginal" class="button outline" href="https://q.utoronto.ca/" target="_blank" rel="noopener noreferrer">Open in Quercus ↗</a>
+      <a id="filePreviewDownload" class="button" href="https://q.utoronto.ca/" target="_blank" rel="noopener noreferrer" download>Download ↧</a>
+    </div>
+  </dialog>
   <dialog id="connectDialog">
     <form method="dialog" class="dialog-head"><strong>Connect to Quercus</strong><button class="icon-button" aria-label="Close">✕</button></form>
     <p>Sync all accessible courses, assignments, announcements and Module pages directly from this iPhone. Your laptop does not need to be on.</p>

@@ -3,10 +3,13 @@ import { BrowserCanvasClient } from './core/canvas.mjs';
 import { syncQuercus } from './core/sync.mjs';
 import { renderCanvasContent, contentLinks } from './core/rich-content.mjs';
 import { makeMobileExport, makeSavedMarkdownExport } from './core/mobile-export.mjs';
+import { pageRoute, courseRoute, parseReaderRoute, resolveSavedPageLink, savedPage } from './core/page-router.mjs';
+import { buildPageCatalog, buildPageReader } from './core/page-ui.mjs';
+import { describeFilePreview } from './core/attachment-preview.mjs';
 
 const $ = id => document.getElementById(id);
 const content = $('content');
-const state = { snapshot:null, markdown:null, view:'home', query:'', course:'all', token:null, syncing:false };
+const state = { snapshot:null, markdown:null, view:'home', query:'', course:'all', reader:null, token:null, syncing:false };
 const DB_NAME = 'quercus-pocket-private';
 const DB_VERSION = 2;
 const MAX_FILE_BYTES = 40 * 1024 * 1024;
@@ -106,11 +109,9 @@ function fileAction(file) {
   return link(file.url, 'Open file');
 }
 function snapshotPages(){
-  const all=pages(state.snapshot);
-  const arr=all.filter(p=>(state.course==='all'||String(p.courseId)===state.course)&&match(p.title,p.course,p.module,p.text));
-  const courses=state.snapshot.courses;
-  const select='<label class="sr-only" for="pageCourse">Filter course</label><select id="pageCourse" class="course-select"><option value="all">All courses</option>'+courses.map(c=>'<option value="'+escapeHtml(c.id)+'" '+(state.course===String(c.id)?'selected':'')+'>'+escapeHtml(courseName(c))+'</option>').join('')+'</select>';
-  return section('Course pages',select+grouped(arr,p=>card(p.title,p.module||'Course Page','<span class="pill '+(p.status==='retrieved'?'':'warn')+'">'+(p.status==='retrieved'?'Content saved':'Body unavailable')+'</span>'+(p.html?'<details><summary>Read page and open links</summary>'+pageContentHtml(p.html)+'</details>':p.text?'<details><summary>Read page</summary><div class="body-text">'+escapeHtml(p.text)+'</div></details>':''),link(p.url),p.course)),arr.length+' found');
+  return state.reader
+    ? buildPageReader(state.snapshot, state.reader.courseId, state.reader.slug)
+    : buildPageCatalog(state.snapshot, state.course, state.query);
 }
 function snapshotMore(){
   const notes=announcements(state.snapshot).filter(a=>match(a.title,a.text,a.course));
@@ -127,6 +128,7 @@ function markdownHome(){
 }
 function render(){
   updateHeader();
+  $('main').classList.toggle('reader-mode', Boolean(state.reader && state.view==='pages'));
   if(!state.snapshot&&!state.markdown){
     content.innerHTML=empty('Connect directly to Quercus','Sync your course data from your phone with no laptop required.')+
       '<div class="cta"><button class="button" id="firstConnect">Connect and sync Quercus</button><button class="button outline" id="firstImport">Import a saved export</button></div>'+
@@ -136,14 +138,59 @@ function render(){
   }
   if(state.markdown&&!state.snapshot){content.innerHTML=markdownHome();return;}
   content.innerHTML=({home:snapshotHome,tasks:snapshotTasks,courses:snapshotCourses,pages:snapshotPages,more:snapshotMore}[state.view]||snapshotHome)();
+  // Images whose Canvas content provides only a file API reference have no
+  // initial browser URL: resolve their signed URLs on demand.
+  content.querySelectorAll('img[data-canvas-image-pending]').forEach(image =>
+    handleInlineImageFailure({target:image}));
   const courseSelect=$('pageCourse');if(courseSelect)courseSelect.addEventListener('change',e=>{state.course=e.target.value;render()});
-  document.querySelectorAll('[data-course]').forEach(b=>b.addEventListener('click',()=>{state.course=b.dataset.course;state.view='pages';state.query='';$('search').value='';render();scrollTo(0,0)}));
+  document.querySelectorAll('[data-course]').forEach(b=>b.addEventListener('click',()=>navigateCourse(b.dataset.course)));
   $('refreshExport')?.addEventListener('click',openImport);
   $('openExportMore')?.addEventListener('click',openExport);
   $('syncAgain')?.addEventListener('click',()=>state.token?startLiveSync():openConnect());
   $('changeToken')?.addEventListener('click',openConnect);
   $('forgetToken')?.addEventListener('click',async()=>{await dbForgetToken();state.token=null;alert('Saved access token cleared from this device.');});
   $('clearData')?.addEventListener('click',async()=>{if(!confirm('Delete all imported Quercus data AND your saved access token from this phone?'))return;await dbClear();state.token=null;state.snapshot=null;state.markdown=null;state.course='all';state.view='home';render()});
+}
+function navigateCourse(courseId) {
+  if (!state.snapshot) return;
+  const c = (state.snapshot.courses || []).find(x => String(x.id) === String(courseId));
+  if (!c) return;
+  history.pushState({pocket:true}, '', courseRoute(courseId));
+  state.view='pages';state.course=String(courseId);state.reader=null;
+  state.query='';$('search').value='';
+  render();window.scrollTo(0,0);
+}
+function navigatePage(courseId,slug) {
+  if (!savedPage(state.snapshot, courseId, slug)) return;
+  history.pushState({pocket:true}, '', pageRoute(courseId, slug));
+  state.view='pages';state.course=String(courseId);
+  state.reader={courseId:String(courseId),slug:String(slug)};
+  state.query='';$('search').value='';
+  render();window.scrollTo(0,0);
+}
+function navigatePageLibrary() {
+  if (state.course!=='all') {
+    history.pushState({pocket:true}, '', '#/pages');
+    state.course='all';
+  }
+  state.reader=null;state.view='pages';state.query='';$('search').value='';
+  render();window.scrollTo(0,0);
+}
+function restoreReaderRoute() {
+  const route = parseReaderRoute(location.hash);
+  if (route && state.snapshot) {
+    const known = (state.snapshot.courses || []).some(c=>String(c.id)===route.courseId);
+    if (!known) return;
+    state.course=route.courseId;
+    state.reader=route.slug && savedPage(state.snapshot,route.courseId,route.slug)
+      ? route : null;
+    state.view='pages';
+  } else if(location.hash==='#/pages' && state.snapshot) {
+    state.reader=null;state.course='all';state.view='pages';
+  } else if(state.reader){
+    state.reader=null;
+  }
+  render();
 }
 function dbOpen(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,DB_VERSION);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('data'))req.result.createObjectStore('data');if(!req.result.objectStoreNames.contains('auth'))req.result.createObjectStore('auth')};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});}
 async function dbRead(){const db=await dbOpen();return new Promise((resolve,reject)=>{const t=db.transaction('data','readonly');const req=t.objectStore('data').get('latest');req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);t.oncomplete=()=>db.close();});}
@@ -167,7 +214,7 @@ async function importFile(file){
     await dbWrite({kind:'markdown',value:text});
     state.markdown=text;state.snapshot=null;
   } else throw new Error('Choose the Complete JSON (.json) or ChatGPT Markdown (.md) Quercus export.');
-  state.view='home';state.course='all';state.query='';$('search').value='';
+  state.reader=null;state.view='home';state.course='all';state.query='';$('search').value='';
   $('importDialog').close();render();
 }
 
@@ -201,40 +248,136 @@ async function exportSnapshot(format) {
   }
 }
 
-// The Canvas file API returns a download URL for files readable by this student.
-// Open that URL on the device (typically a signed Canvas/CDN link). No binary file
-// passes through Vercel, and the token never appears in a link or download URL.
-async function handleFileLink(event) {
-  const a = event.target.closest('a[data-canvas-file]');
-  if (!a || !content.contains(a) || !state.token || !navigator.onLine) return;
-  const id = a.dataset.canvasFile;
-  if (!/^\d+$/.test(id)) return;
-  event.preventDefault();
-  const fallback = a.href;
-  const popup = window.open('about:blank', '_blank');
-  if (popup) popup.document.body.textContent = 'Preparing Quercus file…';
+let previewRequestNumber = 0;
+function httpsUrl(candidate) {
   try {
-    const response = await new BrowserCanvasClient(state.token).getOne('/api/v1/files/' + id);
-    const link = response.data?.url;
-    const url = new URL(link || '');
-    if (url.protocol !== 'https:') throw new Error('Quercus did not provide a secure download URL.');
-    if (popup) {
-      popup.location.href = url.toString();
-    } else {
-      const notice = document.createElement('div');
-      notice.className = 'download-result';
-      const ready = document.createElement('a');
-      ready.href = url.toString();
-      ready.target = '_blank'; ready.rel = 'noopener noreferrer';
-      ready.textContent = 'Tap here to open attachment ' + id;
-      notice.appendChild(ready);
-      a.after(notice);
+    const u = new URL(candidate);
+    return u.protocol === 'https:' ? u.toString() : '';
+  } catch { return ''; }
+}
+
+function setPreviewAnchor(id, url) {
+  const anchor=$(id);
+  const safe=httpsUrl(url);
+  anchor.href=safe||'https://q.utoronto.ca/';
+  anchor.hidden=!safe;
+}
+
+async function authorizedFile(fileId) {
+  if (!state.token) throw new Error('Connect a Quercus API token to preview private files in Pocket.');
+  if (!navigator.onLine) throw new Error('The attachment is not stored offline. Connect to the internet to preview it.');
+  const client=new BrowserCanvasClient(state.token);
+  const metadata=(await client.getOne('/api/v1/files/'+fileId)).data;
+  if (!metadata || String(metadata.id)!==String(fileId)) throw new Error('Quercus did not return this file.');
+  let inline='';
+  try {
+    const result=await client.getOne('/api/v1/files/'+fileId+'/public_url');
+    inline=result.data?.public_url||'';
+  }catch {
+    // Not all courses support the public inline-preview endpoint. Use the
+    // standard metadata URL as a best-effort fallback.
+  }
+  return {metadata, inline};
+}
+
+async function handleFileLink(event) {
+  const target=event.target;
+  if(!(target instanceof Element))return;
+  const a=target.closest('a[data-canvas-file]');
+  if(!a || !content.contains(a))return;
+  const fileId=a.dataset.canvasFile;
+  if(!/^\d+$/.test(fileId))return;
+  event.preventDefault();
+
+  const original=httpsUrl(a.href)||'https://q.utoronto.ca/files/'+fileId;
+  const dialog=$('filePreviewDialog');
+  const body=$('filePreviewContent');
+  const status=$('filePreviewStatus');
+  const ticket=++previewRequestNumber;
+  body.replaceChildren();
+  $('filePreviewTitle').textContent=a.textContent?.trim().replace(/[↧›]+$/,'').trim()||'Quercus file';
+  status.textContent='Fetching an authorized inline preview from Quercus…';
+  setPreviewAnchor('filePreviewOriginal',original);
+  setPreviewAnchor('filePreviewDownload',original);
+  if(!dialog.open)dialog.showModal();
+
+  try {
+    const {metadata,inline}=await authorizedFile(fileId);
+    if(ticket!==previewRequestNumber||!dialog.open)return;
+    const view=describeFilePreview(metadata,inline,original);
+    $('filePreviewTitle').textContent=view.name;
+    setPreviewAnchor('filePreviewOriginal',view.origin||original);
+    setPreviewAnchor('filePreviewDownload',view.download||original);
+    if(!view.isPreviewable){
+      status.textContent='This file type has no supported in-app preview. You can open it in Quercus or download the original.';
+      return;
     }
-  } catch (error) {
-    if (popup) popup.location.href = fallback;
-    else alert('Automatic file access was unavailable. Open the original page in Quercus to download it.');
+    if(view.kind==='image'){
+      const image=document.createElement('img');
+      image.src=view.preview;image.alt=view.name;
+      image.className='preview-image';
+      image.referrerPolicy='no-referrer';
+      image.addEventListener('load',()=>{if(ticket===previewRequestNumber)status.textContent='Image preview';});
+      image.addEventListener('error',()=>{if(ticket===previewRequestNumber)status.textContent='The image could not load inside Pocket. Try Open in Quercus.';});
+      body.replaceChildren(image);
+    }else{
+      const iframe=document.createElement('iframe');
+      iframe.src=view.preview;
+      iframe.title='Preview of '+view.name;
+      iframe.className='preview-frame';
+      iframe.referrerPolicy='no-referrer';
+      iframe.setAttribute('loading','eager');
+      body.replaceChildren(iframe);
+      status.textContent=view.kind==='pdf'
+        ? 'PDF preview · scroll or zoom inside the viewer. If your iPhone cannot render it, use Open in Quercus.'
+        : 'Document preview · if your browser blocks it, use Open in Quercus.';
+    }
+  }catch(error){
+    if(ticket===previewRequestNumber){
+      status.textContent=error.message+'. You can still open the original in Quercus.';
+    }
   }
 }
+
+async function handleInlineImageFailure(event) {
+  const image=event.target;
+  if(!(image instanceof HTMLImageElement) || !content.contains(image))return;
+  if(image.dataset.canvasImageRetry)return;
+  image.dataset.canvasImageRetry='true';
+  const id=image.dataset.canvasImageFile;
+  const fallback=image.src;
+  if(id && /^\d+$/.test(id) && state.token && navigator.onLine){
+    try {
+      const {metadata,inline}=await authorizedFile(id);
+      if(!content.contains(image))return;
+      const view=describeFilePreview(metadata,inline,fallback);
+      if(view.preview && view.preview!==fallback){
+        image.src=view.preview;
+        return;
+      }
+    }catch {
+      // The image may require a full Quercus session, or be locked.
+    }
+  }
+  const anchor=document.createElement('a');
+  anchor.textContent='View image: '+(image.alt||'course image');
+  anchor.className='canvas-link';
+  anchor.target='_blank';
+  anchor.rel='noopener noreferrer';
+  const safe=httpsUrl(fallback);
+  if(safe)anchor.href=safe;
+  else anchor.href='https://q.utoronto.ca/';
+  if(id && /^\d+$/.test(id)){
+    anchor.dataset.canvasFile=id;
+    anchor.textContent='Preview image attachment: '+(image.alt||'course image');
+  }
+  image.replaceWith(anchor);
+}
+
+$('filePreviewDialog').addEventListener('close',()=>{
+  previewRequestNumber++;
+  $('filePreviewContent').replaceChildren();
+});
 
 function progressText(update) {
   const strip = $('liveSync');
@@ -265,6 +408,8 @@ async function startLiveSync() {
     state.snapshot = next;
     state.markdown = null;
     state.view = 'home';
+    state.reader = null;
+    if(location.hash.startsWith('#/course/'))history.replaceState({},'',location.pathname+location.search);
     state.course = 'all';
     state.query = '';
     $('search').value = '';
@@ -314,10 +459,42 @@ document.querySelectorAll('[data-export]').forEach(button => button.addEventList
   catch(error){$('exportMessage').textContent='Export failed: '+error.message;}
   finally {button.disabled=false;}
 }));
+content.addEventListener('click',event=>{
+  const target=event.target;
+  if (!(target instanceof Element)) return;
+  const pageButton=target.closest('[data-open-page-course][data-open-page-slug]');
+  if(pageButton && content.contains(pageButton)){
+    event.preventDefault();navigatePage(pageButton.dataset.openPageCourse,pageButton.dataset.openPageSlug);return;
+  }
+  const courseButton=target.closest('[data-go-course]');
+  if(courseButton && content.contains(courseButton)){
+    event.preventDefault();navigateCourse(courseButton.dataset.goCourse);return;
+  }
+  const backButton=target.closest('[data-back-courses]');
+  if(backButton && content.contains(backButton)){
+    event.preventDefault();
+    if(state.reader)navigateCourse(state.course);else navigatePageLibrary();
+    return;
+  }
+  const link=target.closest('a[href]');
+  if(link && !link.hasAttribute('data-canvas-file') && content.contains(link) && state.snapshot){
+    const resolved=resolveSavedPageLink(state.snapshot,link.getAttribute('href'),
+      state.reader?.courseId || state.course,link.dataset.canvasApiEndpoint || '');
+    if(resolved){
+      event.preventDefault();navigatePage(resolved.courseId,resolved.slug);return;
+    }
+  }
+});
 content.addEventListener('click',handleFileLink);
+content.addEventListener('error',handleInlineImageFailure,true);
 $('fileInput').addEventListener('change',async event=>{try{await importFile(event.target.files?.[0])}catch(e){$('importMessage').textContent='Unable to import: '+e.message}finally{event.target.value=''}});
 $('search').addEventListener('input',e=>{state.query=e.target.value.toLowerCase().trim();render()});
-document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{state.view=b.dataset.view;render();scrollTo(0,0)}));
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{
+  if(location.hash.startsWith('#/'))history.pushState({pocket:true},'',location.pathname+location.search);
+  state.reader=null;state.view=b.dataset.view;render();scrollTo(0,0);
+}));
+window.addEventListener('popstate',restoreReaderRoute);
+window.addEventListener('hashchange',restoreReaderRoute);
 try {const stored=await dbRead();if(stored?.kind==='json')state.snapshot=validateSnapshot(stored.value);else if(stored?.kind==='markdown')state.markdown=stored.value;state.token=await dbReadToken();}catch(e){console.warn('Could not read private mobile storage',e);}
-render();
+restoreReaderRoute();
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('./sw.js').catch(()=>{});
