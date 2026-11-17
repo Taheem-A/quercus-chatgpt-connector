@@ -28,6 +28,9 @@ const COURSE_CHILDREN = new Set([
 
 function allowedPath(pathname) {
   if (ROOT_PATHS.has(pathname)) return true;
+  // File metadata lookup, needed for links embedded in Canvas pages.
+  // It returns an authorized temporary download URL, not file bytes.
+  if (/^\/api\/v1\/files\/\d+$/.test(pathname)) return true;
   const match = /^\/api\/v1\/courses\/([0-9]+)(?:\/(.+))?$/.exec(pathname);
   if (!match) return false;
   const child = match[2] || '';
