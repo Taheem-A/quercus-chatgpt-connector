@@ -260,12 +260,12 @@ function pagesView() {
     const cd = state.snapshot.courseData?.[c.id] || {};
     for (const p of cd.pages || []) {
       const detail = cd.pageDetails?.[p.url] || {};
-      const text = stripHtml(detail.body || p.body || '');
+      const text = stripHtml(detail.body ?? p.body ?? '');
       if (!matchSearch(c.course_code, c.name, p.title, text)) continue;
       rows.push({ c, p, text });
     }
   }
-  return rows.length ? `<div class="table-wrap"><table><thead><tr><th>Page</th><th>Course</th><th>Updated</th><th>Flags</th><th></th></tr></thead><tbody>${rows.map(({c,p,text}) => `<tr><td><div class="cell-title">${escapeHtml(p.title)}</div>${text ? `<div class="cell-sub">${escapeHtml(text.slice(0, 320))}</div>` : ''}</td><td>${escapeHtml(c.course_code || c.name)}</td><td class="nowrap">${fmtDate(p.updated_at, true)}</td><td>${p.front_page ? badge('Front page', 'info') : ''} ${p.published === false ? badge('Unpublished') : ''}</td><td>${link(p.html_url)}</td></tr>`).join('')}</tbody></table></div>` : empty('No pages match');
+  return rows.length ? `<div class="table-wrap"><table><thead><tr><th>Page</th><th>Course</th><th>Updated</th><th>Flags</th><th></th></tr></thead><tbody>${rows.map(({c,p,text}) => `<tr><td><div class="cell-title">${escapeHtml(p.title)}</div>${text ? `<div class="cell-sub">${escapeHtml(text.slice(0, 320))}</div><details class="small"><summary>Read captured page</summary><div style="white-space:pre-wrap;overflow-wrap:anywhere;padding:10px 0">${escapeHtml(text)}</div></details>` : ''}</td><td>${escapeHtml(c.course_code || c.name)}</td><td class="nowrap">${fmtDate(p.updated_at, true)}</td><td>${p.front_page ? badge('Front page', 'info') : ''} ${p.published === false ? badge('Unpublished') : ''} ${p.content_status === 'retrieved' ? badge('Content synced', 'success') : badge('Body unavailable')}</td><td>${link(p.html_url)}</td></tr>`).join('')}</tbody></table></div>` : empty('No pages match');
 }
 
 function discussionsView() {
