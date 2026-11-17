@@ -48,3 +48,99 @@
 .card details h4{margin:16px 0 7px;font-size:13px}
 .resource-list{padding-left:20px;margin:4px 0 9px}.resource-list li{font-size:13px;margin:7px 0}
 @media(prefers-color-scheme:dark){.download-result{background:#183c37}.canvas-rich code,.canvas-rich pre{background:#253448}.canvas-rich th,.canvas-rich td{border-color:#405167}.canvas-rich a,.resource-list a{color:#6bcdc4!important}}
+
+/* Quercus Pocket course library and distraction-free reading */
+.main.reader-mode{padding-top:12px}
+.reader-mode .hero,.reader-mode .search-wrap{display:none}
+.reader-section-heading,.reader-library-header{padding:12px 0 22px}
+.reader-kicker{font-size:11px;color:#218b80;font-weight:850;letter-spacing:.13em;text-transform:uppercase;margin-bottom:7px}
+.reader-section-heading h2,.reader-library-header h2{font-size:25px;line-height:1.25;letter-spacing:-.03em;margin:0 0 7px}
+.reader-section-heading p,.reader-library-header p{font-size:13px;line-height:1.5;color:#697b91;margin:0}
+.reader-section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.reader-overview-count{flex-shrink:0;font-size:11px;padding:5px 8px;color:#116c66;background:#e5f3f0;border-radius:8px;margin-top:4px}
+.reader-course-list,.reader-module-list{display:grid;gap:10px}
+.reader-course-tile{display:flex;align-items:center;gap:12px;text-align:left;width:100%;border:1px solid #e1e7ed;border-radius:15px;background:#fff;padding:15px 13px;color:#18304b;box-shadow:0 2px 9px #10203008}
+.reader-course-mark{display:grid;place-items:center;flex-shrink:0;height:38px;width:38px;color:#147a70;background:#e6f4f1;border-radius:10px;font-size:23px}
+.reader-course-copy{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.reader-course-copy b{font-size:14px}
+.reader-course-copy small{font-size:11px;color:#67798d;line-height:1.35}
+.reader-count{font-size:11px;color:#6c7e92;white-space:nowrap}
+.reader-back-link,.reader-breadcrumb button{background:transparent;border:0;color:#157b73;font-weight:700;padding:8px 0;font-size:13px}
+.reader-back-link{margin-bottom:14px}
+.reader-module{border:1px solid #dfe6ec;border-radius:14px;background:#fff;overflow:hidden}
+.reader-module summary{display:flex;gap:10px;align-items:center;cursor:pointer;min-height:58px;padding:11px 13px;list-style:none;font-size:14px;font-weight:740}
+.reader-module summary::-webkit-details-marker{display:none}
+.reader-module-icon{font-size:21px;color:#1b8075}
+.reader-module-label{flex:1;min-width:0;line-height:1.4}
+.reader-module summary small{font-size:11px;font-weight:500;color:#7a899b;white-space:nowrap}
+.reader-chevron{color:#697b91;transform:rotate(-90deg);transition:transform .18s}
+.reader-module[open] .reader-chevron{transform:rotate(0)}
+.reader-module-pages{border-top:1px solid #eef2f5}
+.reader-page-row{border:0;border-bottom:1px solid #eff2f5;background:#fff;display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:14px 16px;color:#263c56}
+.reader-page-row:last-child{border-bottom:0}
+.reader-page-row:active,.reader-course-tile:active{background:#eef7f5}
+.reader-page-icon{color:#2e8880;font-size:16px}
+.reader-page-title{font-size:13px;line-height:1.4;min-width:0;flex:1}
+.reader-missing{font-size:10px;color:#97602a}
+.reader-arrow{font-size:22px;color:#9ba7b6}
+.reader-empty{border:1px dashed #cbd5df;background:#fff;border-radius:12px;padding:20px;font-size:13px;color:#66778d;text-align:center}
+.reader-article-shell{max-width:780px;margin:0 auto}
+.reader-breadcrumb{display:flex;align-items:center;gap:9px;color:#8391a4;margin-bottom:14px;font-size:12px;flex-wrap:wrap}
+.reader-article-top{padding:3px 0 22px}
+.reader-article-top h1{font-size:clamp(25px,5vw,34px);line-height:1.22;letter-spacing:-.035em;margin:6px 0 10px;color:inherit;overflow-wrap:anywhere}
+.reader-article-top p{color:#6f7f93;font-size:12px;margin:0;line-height:1.5}
+.reader-document{padding:18px;background:#fff;border:1px solid #e0e7ee;border-radius:17px;box-shadow:0 3px 16px #101d3210}
+.reader-document .canvas-rich{font-size:15px;line-height:1.7;color:#2c3c50}
+.reader-document .canvas-rich p{color:inherit;font-size:inherit;line-height:inherit}
+.reader-document .canvas-rich h1{font-size:24px}
+.reader-document .canvas-rich h2{font-size:21px}
+.reader-document .canvas-rich h3{font-size:18px}
+.reader-document .canvas-rich h4{font-size:16px}
+.reader-document .canvas-rich h5{font-size:15px}
+.reader-document .canvas-rich h6{font-size:14px}
+.reader-document .canvas-rich img.course-inline-image{max-width:100%!important;height:auto!important;display:block;object-fit:contain;margin:16px auto;border-radius:9px;box-shadow:0 1px 5px #243a4a17}
+.reader-document .canvas-rich figure{margin:14px 0}
+.reader-document .canvas-rich figcaption{font-size:12px;color:#64778c;text-align:center;margin-top:5px}
+.reader-chapter,.reader-resources{border-radius:12px;background:#edf7f4;border:1px solid #d8ece7;margin:0 0 16px;overflow:hidden}
+.reader-chapter summary,.reader-resources summary{cursor:pointer;padding:13px 15px;font-size:13px;font-weight:700;color:#156e67;display:flex;justify-content:space-between;gap:12px}
+.reader-chapter summary span,.reader-resources summary span{font-size:11px;color:#58978e}
+.reader-chapter-items,.reader-resource-links{display:grid;border-top:1px solid #d7e9e4}
+.reader-chapter-items button{text-align:left;padding:11px 14px;background:transparent;border:0;border-bottom:1px solid #d9ebe6;font-size:13px;color:#315064}
+.reader-chapter-items button.current{color:#126f66;font-weight:800;background:#dff2ed}
+.reader-resources{margin:22px 0 0}
+.reader-resource-links a{padding:11px 13px;border-bottom:1px solid #d9ebe6;font-size:13px;overflow-wrap:anywhere}
+.reader-document-footer{margin:17px 4px 4px}
+.reader-source{font-size:12px;color:#146f69}
+.reader-pagination{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:22px 0 30px}
+.reader-step{padding:12px;text-align:left;border-radius:12px;border:1px solid #dce6eb;background:#fff;min-width:0}
+.reader-step.next{text-align:right}
+.reader-step small{display:block;font-size:11px;color:#257d72;margin-bottom:5px}
+.reader-step b{display:block;font-size:12px;line-height:1.35;color:#243c51;overflow-wrap:anywhere}
+/* Native file viewer embedded in Pocket. External links are explicitly optional. */
+.file-preview-dialog{width:calc(100% - 20px);max-width:900px;max-height:calc(100dvh - 28px);padding:0;overflow:hidden;border-radius:16px}
+.file-preview-dialog .preview-header{padding:14px 15px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e1e8ee}
+.preview-heading{display:grid;gap:5px;min-width:0}
+.preview-heading small{color:#1d8075;letter-spacing:.1em;font-size:10px;font-weight:850}
+.preview-heading strong{font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.preview-header .icon-button{color:#394c61;background:#e9eef2}
+.preview-status{margin:0;padding:10px 15px!important;color:#63768a;font-size:12px!important;line-height:1.5!important}
+.preview-content{max-height:65dvh;min-height:100px;background:#f0f3f7;overflow:auto;display:grid;place-items:center}
+.preview-image{display:block;width:auto;max-width:100%;height:auto;max-height:65dvh;object-fit:contain;margin:auto}
+.preview-frame{display:block;width:100%;height:63dvh;min-height:280px;border:0;background:#fff}
+.preview-actions{display:flex;gap:9px;flex-wrap:wrap;padding:13px 15px;border-top:1px solid #e0e7ed}
+.preview-actions .button{flex:1;text-align:center;font-size:12px;white-space:nowrap}
+.preview-actions [hidden]{display:none}
+@media(min-width:720px){.reader-document{padding:28px 36px}.reader-article-top{padding-top:12px}.reader-section-heading h2,.reader-library-header h2{font-size:30px}}
+@media(prefers-color-scheme:dark){
+ .reader-section-heading p,.reader-library-header p,.reader-course-copy small,.reader-article-top p,.reader-module summary small{color:#aabacf}
+ .reader-course-tile,.reader-module,.reader-page-row,.reader-empty,.reader-document,.reader-step{background:#17263b;border-color:#30445e;color:#e5edf7}
+ .reader-course-mark,.reader-overview-count,.reader-chapter,.reader-resources{background:#1b403d;color:#8ed6c9}
+ .reader-module-pages,.reader-chapter-items,.reader-resource-links{border-color:#34544f}
+ .reader-page-row{border-color:#30445e}.reader-page-row:active{background:#1d3f3f}
+ .reader-document .canvas-rich,.reader-step b{color:#dce9f6}
+ .reader-module-label,.reader-page-title{color:#e0ebf6}
+ .reader-chapter-items button{color:#c9dfdc;border-color:#31564f}
+ .reader-chapter-items button.current{background:#1b5b4f;color:#fff}
+ .preview-content{background:#0f1e31}.file-preview-dialog .preview-header,.preview-actions{border-color:#32465e}
+ .preview-status{color:#adbbcb}.preview-header .icon-button{background:#293c50;color:#fff}
+}
