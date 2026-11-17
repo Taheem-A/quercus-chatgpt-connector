@@ -1,5 +1,5 @@
-const CACHE = 'quercus-pocket-v1';
-const ASSETS = ['./','./index.html','./styles.css','./app.js','./data.mjs','./icon.svg','./manifest.webmanifest'];
+const CACHE = 'quercus-pocket-v2';
+const ASSETS = ['./','./index.html','./styles.css','./app.js','./data.mjs','./core/canvas.mjs','./core/sync.mjs','./core/page-content.mjs','./icon.svg','./manifest.webmanifest'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
 });

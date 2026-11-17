@@ -8,28 +8,34 @@ There is no cloud database, no Vercel requirement, no Docker, and no npm depende
 
 ## iPhone and Android companion — Quercus Pocket
 
-The **mobile/** directory is a separate, installable Progressive Web App for reading your saved Quercus data without your laptop running.
+Quercus Pocket is a separately deployed mobile Progressive Web App: https://quercus-pocket.vercel.app/.
 
-**Important distinction:** Quercus Local remains the desktop **live sync** app. Quercus Pocket is an **offline snapshot reader**. The static mobile site does not have your token, cannot run a live Canvas sync, and does not automatically update grades or deadlines. It makes existing course information available on a phone even with the laptop powered off.
+**It can now sync Quercus directly from the phone with the Windows laptop powered off.** It runs the same read-only Quercus synchronization engine as the desktop connector, including module-linked page bodies, and saves the result for offline reading.
 
-### How to use
+### Set up direct phone sync
 
-1. On your laptop, run Quercus Local and **Sync Quercus**.
-2. From **Export**, download **Complete JSON** (preferred). ChatGPT Markdown (.md) also works in reading mode.
-3. Move the export to the iPhone using AirDrop, iCloud Drive, or a file transfer method you trust.
-4. Open the deployed Quercus Pocket HTTPS address in **Safari**. Tap **Share → Add to Home Screen** and add it.
-5. Open Quercus Pocket from the **home-screen icon**, then tap **Import** and choose the saved file. Its cached interface and imported snapshot remain usable offline. Importing from the installed app avoids possible Safari/standalone storage separation on iPhone.
-6. When you want fresh data, run a new desktop sync and import a replacement export.
+1. On iPhone, open https://quercus-pocket.vercel.app/ in Safari, tap Share → Add to Home Screen, then launch that home-screen icon.
+2. Tap **Connect and sync Quercus** (or ⟳ in the header).
+3. In your own Quercus account, find or generate a personal Canvas API token under Account → Settings → Approved Integrations. Never send tokens in chat or files. Availability and permitted use can vary by institution.
+4. Paste the token in Quercus Pocket. Optionally select **Remember token on this device** for later one-tap refresh. Tap Connect and sync now.
+5. Keep the phone screen on and the app in the foreground until the sync finishes; mobile browsers may suspend inactive tabs. Hundreds of requests may be required.
+6. Synced courses, deadlines, grades, announcements, Module page text and course file listings are then available offline. Tap ⟳ to refresh on demand.
 
-The reader supports searchable assignments, course pages and their saved bodies, announcements, files/links, and course summaries when imported via Complete JSON. Markdown mode allows searching and reading exported course sections.
+### API architecture and privacy
 
-**Privacy/security:** The mobile website is a static shell only. There are no API requests that upload course content, and its Content Security Policy forbids outgoing fetch connections. Imported course data lives in the phone's IndexedDB browser storage and is not committed to GitHub or stored in Vercel. The app includes an explicit **Delete saved data** option. Do not share the export itself publicly. Browser storage can be cleared or evicted by iOS; retain an original copy of the export. Quercus links may require U of T authentication and an internet connection.
+Direct browser-to-Quercus API calls may be blocked by cross-origin browser policy. A restricted, read-only Vercel Node Function at mobile/api/canvas.js forwards phone requests:
 
-### Hosting
+- The browser sends an HTTPS POST request with its token to the same-origin relay. The relay allows only an explicit set of Canvas GET paths on q.utoronto.ca. It rejects arbitrary domains, mutation requests, cross-origin browser calls and redirects.
+- The token is forwarded to Quercus and processed transiently by Vercel; **it is not stored in a Vercel database, file or environment variable**, and the relay disables response caching and intentionally does not log secrets. Vercel remains a service provider handling the token in transit.
+- The static site has no student token or course data bundled into it. Your latest snapshot stays in the phone's IndexedDB. The token is kept only in session memory unless you opt into **Remember token on this device** (IndexedDB, without extra app-level encryption). Use **More → Forget saved token** or **Delete saved data** to clear it.
+- Protect your Canvas token like a password. Revoke it through Quercus if it becomes compromised. This is for personal use; it is not an OAuth integration intended to collect tokens from other users.
+- Vercel Hobby usage quotas apply; a complete phone sync invokes the relay many times. The desktop localhost server is not exposed to the internet.
 
-Deploy the **public static code only** from `mobile/` to any HTTPS static host. For Vercel, create a separate project linked to this repository with **Root Directory = mobile**, **Framework Preset = Other**, and no environment variables. No paid plan or backend is required for this offline reader. **Do not deploy the root `server.mjs`**, which is intentionally loopback-only and has no remote-user authentication.
+### Offline access and export import
 
-A full independent live mobile sync requires a separately designed authenticated cloud backend and secure secret management; do not expose local port 3210 or upload `.env.local` or `.quercus-local.json`.
+The phone service worker caches the mobile app and its sync code. Successful snapshots stay on the phone for offline browsing. Manually importing Complete JSON or ChatGPT Markdown exports remains optional; **a desktop export is no longer required for phone sync**.
+
+Canvas-linked binary course files are not downloaded in bulk; opening them can require internet access and a Quercus login. The app is read-only and does not submit assignments or modify course data. iOS can evict browser storage; keep backups when important.
 
 ---
 

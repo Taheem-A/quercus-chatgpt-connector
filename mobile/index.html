@@ -7,8 +7,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Quercus Pocket">
-  <meta name="description" content="Private, offline-ready course reader for your Quercus exports">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="description" content="Sync Quercus directly from your phone, with offline access to saved courses">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
@@ -18,10 +18,17 @@
   <div class="app-shell">
     <header class="topbar">
       <div class="identity"><div class="mark">Q</div><div><strong>Quercus Pocket</strong><small>Private course reader</small></div></div>
-      <button id="importButton" class="icon-button" title="Import a new export" type="button" aria-label="Import Quercus export">↥</button>
+      <div class="toolbar">
+        <button id="connectButton" class="icon-button" title="Sync Quercus" type="button" aria-label="Sync Quercus directly from phone">⟳</button>
+        <button id="importButton" class="icon-button" title="Import a saved export" type="button" aria-label="Import Quercus export">↥</button>
+      </div>
     </header>
     <main id="main" class="main" tabindex="-1">
       <section class="hero"><p class="eyebrow">YOUR UNIVERSITY, ANYWHERE</p><h1>Course overview</h1><p id="syncStatus" class="subtitle">Load an export to get started.</p></section>
+      <div id="liveSync" class="sync-strip" hidden role="status" aria-live="polite">
+        <div id="liveSyncText">Connecting to Quercus…</div>
+        <progress id="liveSyncProgress" max="100" value="0"></progress>
+      </div>
       <div class="search-wrap"><label class="sr-only" for="search">Search everything</label><input id="search" type="search" placeholder="Search courses, pages, deadlines…" autocomplete="off"></div>
       <div id="content" aria-live="polite"></div>
     </main>
@@ -33,6 +40,17 @@
       <button data-view="more"><span>☰</span>More</button>
     </nav>
   </div>
+  <dialog id="connectDialog">
+    <form method="dialog" class="dialog-head"><strong>Connect to Quercus</strong><button class="icon-button" aria-label="Close">✕</button></form>
+    <p>Sync all accessible courses, assignments, announcements and Module pages directly from this iPhone. Your laptop does not need to be on.</p>
+    <label class="token-label" for="tokenInput">Personal Quercus API access token</label>
+    <input id="tokenInput" class="token-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste your Quercus access token">
+    <p class="hint">Find or generate your personal token in Quercus → Account → Settings → Approved Integrations. Never share it in chat or upload it as a file.</p>
+    <label class="remember-row"><input type="checkbox" id="rememberToken"> Remember token on this device</label>
+    <p class="hint">For live sync, your token travels over HTTPS through this application's private-request relay on Vercel to q.utoronto.ca. It is not retained on Vercel. If remembered, it is stored in this device's browser storage, not encrypted with an additional password.</p>
+    <button id="connectNow" class="button" type="button">Connect and sync now</button>
+    <p id="connectMessage" role="status"></p>
+  </dialog>
   <dialog id="importDialog">
     <form method="dialog" class="dialog-head"><strong>Import Quercus export</strong><button class="icon-button" aria-label="Close">✕</button></form>
     <p>Import a <b>Complete JSON</b> export for the full experience, or a ChatGPT <b>.md</b> export for searchable text.</p>

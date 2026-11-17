@@ -13,3 +13,15 @@
 .footer-actions{margin-top:25px;padding-bottom:12px;display:flex;flex-wrap:wrap;gap:9px}dialog{border:0;border-radius:19px;max-width:440px;width:calc(100vw - 32px);box-shadow:0 15px 65px #0005;color:#1c2a40;padding:21px}dialog::backdrop{background:#0b172ca8}dialog p{color:#637389;line-height:1.5;font-size:13px}dialog .dialog-head{display:flex;justify-content:space-between;align-items:center}.dialog-head strong{font-size:17px}.dialog-head button{background:#eef2f5;color:#20304a}.upload-field{display:block;background:#eaf6f3;border:2px dashed #69b1ab;border-radius:13px;padding:15px;color:#145c58;font-weight:700;font-size:13px}.upload-field input{margin-top:12px;width:100%;font-size:12px}.hint{font-size:12px!important}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}.md-block{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.7;max-height:55vh;overflow:auto}.course-select{max-width:100%;padding:10px;border-radius:10px;border:1px solid #bfc9d4;margin-bottom:9px}
 @media(min-width:720px){.main{padding:38px 44px 120px}.topbar{padding:0 42px}.stats{grid-template-columns:repeat(3,minmax(0,190px))}.bottom-nav{max-width:680px;border-radius:18px 18px 0 0}.stack.two{grid-template-columns:repeat(2,1fr)}.hero h1{font-size:36px}}
 @media(prefers-color-scheme:dark){:root{background:#0e1828;color:#e9eff7}.app-shell{background:#0e1828}.stat,.card,.panel,.empty,dialog{background:#17263b;border-color:#293a51;color:#e9eff7}.card h3,.empty strong{color:#e9eff7}.card p,.subtitle,.meta,.muted,.stat span,.course-count,dialog p{color:#a1b0c4}.body-text{color:#c2cfdf}#search{background:#17263b;color:#e9eff7;border-color:#304059}.bottom-nav{background:#142239;border-color:#304059}.card details{border-color:#2d3f53}.icon-button{color:#fff}}
+
+/* Live phone sync and token setup */
+.toolbar{display:flex;align-items:center;gap:7px}
+.sync-strip{background:#e6f4f1;border:1px solid #8dc4bd;border-radius:13px;padding:13px;margin:12px 0;color:#195a55;font-size:13px;line-height:1.5}
+.sync-strip[hidden]{display:none}
+.sync-strip progress{display:block;width:100%;height:9px;margin-top:8px;accent-color:#187e75}
+.token-label{display:block;margin:18px 0 8px;color:#263a51;font-size:13px;font-weight:750}
+.token-input{display:block;width:100%;border:1px solid #bccbd4;border-radius:10px;padding:12px;background:#fff;color:#101d32;font-size:15px;box-sizing:border-box}
+.remember-row{display:flex;gap:8px;align-items:center;font-size:13px;font-weight:650;margin:13px 0}
+#connectNow{width:100%;margin-top:12px}
+#connectMessage{color:#b94d37;font-size:13px;min-height:18px}
+@media(prefers-color-scheme:dark){.sync-strip{background:#153b38;border-color:#23665e;color:#ccf2e7}.token-label{color:#dfe9f3}.token-input{background:#152239;color:#fff;border-color:#586677}}
