@@ -227,15 +227,24 @@ export function setupDrive({getSnapshot,getCanvasToken,getUserId}){
   };
   listen('driveConnect',()=>task(async()=>{
     load();
+    if(busy)return;
     config.clientId=trim($('driveClientId').value);save();
     if(!validGoogleClientId(config.clientId))throw Error('Enter a Google OAuth Web client ID from Google Cloud Console.');
-    // This callback starts in a direct user gesture, so GIS can open a popup.
-    await auth.connect(config.clientId);
-    client=new DriveClient(()=>auth.token());
-    about=await client.about();tree=null;plan=null;selected.clear();
-    $('driveConfirmAccount').checked=false;
-    update('Google connected for this session. Verify the account and scan your semester folder.');
-    draw();
+    busy=true;
+    $('driveConnect').disabled=true;
+    update('Google permission window opened. Finish the prompts to connect your Drive…');
+    try{
+      // The OAuth request must start synchronously inside the click gesture.
+      await auth.connect(config.clientId);
+      update('Permission granted. Verifying access to your Google Drive…');
+      client=new DriveClient(()=>auth.token());
+      about=await client.about();tree=null;plan=null;selected.clear();
+      $('driveConfirmAccount').checked=false;
+      update('Google connected for this session. Verify the account and scan your semester folder.');
+    }finally{
+      busy=false;
+      drawConfig();
+    }
   }));
   listen('driveDisconnect',()=>{
     auth.disconnect();client=null;about=null;tree=null;plan=null;selected.clear();

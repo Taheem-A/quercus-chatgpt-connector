@@ -4,8 +4,13 @@ export function validGoogleClientId(value){
   return /^\d{8,30}-[a-z0-9-]{20,}\.apps\.googleusercontent\.com$/.test(String(value||'').trim());
 }
 export class DriveAuthorization{
-  constructor(googleObject=()=>globalThis.google){
+  constructor(googleObject=()=>globalThis.google,{
+    timeoutMs=90000,schedule=setTimeout,cancel=clearTimeout
+  }={}){
     this.googleObject=googleObject;
+    this.timeoutMs=timeoutMs;
+    this.schedule=schedule;
+    this.cancel=cancel;
     this.accessToken=null;
     this.expiresAt=0;
   }
@@ -20,12 +25,33 @@ export class DriveAuthorization{
     // The Google SDK opens its popup from a direct user click; no browser token
     // or OAuth credential is placed in storage, cookies, or Pocket's cloud.
     const response=await new Promise((resolve,reject)=>{
-      const client=auth.initTokenClient({
-        client_id:clientId,scope:DRIVE_SCOPES,
-        callback:r=>r?.error?reject(Error('Google declined Drive authorization.')):resolve(r),
-        error_callback:()=>reject(Error('Google popup failed or was closed. Try Safari or a standard browser.')),
-      });
-      client.requestAccessToken({prompt:'consent'});
+      // If COOP, a browser extension, or a popup blocker prevents the OAuth
+      // callback, the UI must not remain in an endless "connecting" state.
+      let settled=false;
+      let timer;
+      const finish=(error,result)=>{
+        if(settled)return;
+        settled=true;
+        if(timer!==undefined)this.cancel(timer);
+        if(error)reject(error);else resolve(result);
+      };
+      timer=this.schedule(()=>finish(Error(
+        'Google did not return an authorization result. Check that popups are allowed, refresh Pocket, and try again.'
+      )),this.timeoutMs);
+      try{
+        const client=auth.initTokenClient({
+          client_id:clientId,scope:DRIVE_SCOPES,
+          callback:r=>r?.error
+            ?finish(Error('Google declined Drive authorization.'))
+            :finish(null,r),
+          error_callback:()=>finish(Error(
+            'Google authorization popup was blocked or closed before completing. Please try again.'
+          )),
+        });
+        client.requestAccessToken({prompt:'consent'});
+      }catch{
+        finish(Error('Could not open the Google authorization popup. Check your browser popup settings.'));
+      }
     });
     const granted=String(response?.scope||'').split(/\s+/);
     if(!DRIVE_SCOPES.split(' ').every(scope=>granted.includes(scope)))
