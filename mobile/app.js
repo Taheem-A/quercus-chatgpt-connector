@@ -4,6 +4,7 @@ import { syncQuercus } from './core/sync.mjs';
 import { renderCanvasContent, contentLinks } from './core/rich-content.mjs';
 import { makeMobileExport, makeSavedMarkdownExport } from './core/mobile-export.mjs';
 import { makeSnapshotArchive, makeAttachmentArchive } from './core/attachment-export.mjs';
+import { setupDrive } from './core/drive-ui.mjs';
 import { pageRoute, courseRoute, parseReaderRoute, resolveSavedPageLink, savedPage } from './core/page-router.mjs';
 import { buildPageCatalog, buildPageReader } from './core/page-ui.mjs';
 import { describeFilePreview } from './core/attachment-preview.mjs';
@@ -131,6 +132,7 @@ function snapshotMore(){
   const matches=files(state.snapshot).filter(f=>match(f.title,f.course));
   return section('Announcements','<div class="card"><h3>Course announcements</h3><p>Browse updates by course, date, or full message.</p><div class="footer-actions"><button type="button" class="button outline" data-show-announcements>Open announcement centre</button></div></div>')+
     section('Course files',grouped(matches,f=>card(f.title,f.course, '',fileAction(f),f.bytes?Math.round(f.bytes/1024)+' KB':''),35),matches.length+' found')+
+    section('Google Drive','<div class="card"><h3>Organize and back up files</h3><p>Connect your Google Drive, scan your existing academic folders, review proposed destinations, and approve uploads. Files are never moved or overwritten.</p><div class="footer-actions"><button class="button" type="button" id="openDriveMore">Drive & file organizer</button></div></div>')+
     section('Accounts and cloud','<div class="card"><p>Sign in to keep your courses, assignments, Pages and grades in sync between devices. Uploading existing device data is always a separate choice. Your Quercus access token stays device-local.</p><div class="footer-actions"><button class="button" id="openAccountMore">Account & cloud sync</button></div></div>')+
     section('Sync and privacy','<div class="card"><p>Sync Quercus directly from this device with your university token. Course data is stored in Neon only if you explicitly opt in. The Quercus token stays on this device.</p><div class="footer-actions"><button class="button" id="syncAgain">Sync now</button><button class="button outline" id="changeToken">Change token</button><button class="button outline" id="forgetToken">Forget saved token</button><button class="button outline" id="openExportMore">Export my data</button><button class="button outline" id="refreshExport">Import saved export</button><button class="button outline" id="clearData">Delete saved data</button></div></div>');
 }
@@ -167,6 +169,7 @@ function render(){
   }));
   $('refreshExport')?.addEventListener('click',openImport);
   $('openAccountMore')?.addEventListener('click',cloud.openAccount);
+  $('openDriveMore')?.addEventListener('click',drive.open);
   $('openExportMore')?.addEventListener('click',openExport);
   $('syncAgain')?.addEventListener('click',()=>state.token?startLiveSync():openConnect());
   $('changeToken')?.addEventListener('click',openConnect);
@@ -328,6 +331,8 @@ function switchSnapshot(next){
   if(location.hash.startsWith('#/'))history.replaceState({},'',location.pathname+location.search);
   render();
 }
+const drive=setupDrive({getSnapshot:()=>state.snapshot,getCanvasToken:()=>state.token,
+  getUserId:()=>state.cloudUser?.id||null});
 const cloud=setupCloud({state,readLocal:dbRead,writeLocal:dbWrite,
   readAuth:dbReadAuth,writeAuth:dbWriteAuth,removeAuth:dbRemoveAuth,
   updateSnapshot:switchSnapshot,render});
