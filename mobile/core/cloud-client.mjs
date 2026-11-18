@@ -1,14 +1,25 @@
 import { createClient } from '@neondatabase/neon-js';
 import { captureMillis, decideUpload, sanitizeForCloud, verifyOwnedRecord } from './cloud-sync.mjs';
+import { getCloudJwt } from './neon-jwt.mjs';
 
 // This HTTPS endpoint contains no credentials. Neon Auth stores sessions and
 // injects a short-lived, user-scoped JWT into RLS-protected Data API requests.
 // First-party endpoint avoids Safari/WebKit blocking third-party auth cookies.
 const AUTH_URL=location.origin+'/auth';
 const DATA_API_URL='https://ep-proud-poetry-bd2f21s9.apirest.c-8.us-east-2.aws.neon.tech/quercus_pocket/rest/v1';
+// Keep the working first-party account session client unchanged.
 const neon=createClient({
   auth: {url:AUTH_URL},
   dataApi: {url:DATA_API_URL}
+});
+// The Neon JS beta's integrated token path can attach an opaque session
+// identifier to Data API requests. Use an explicit signed JWT provider
+// instead. The DB still validates signature, role, expiration, and RLS.
+const privateDb=createClient({
+  dataApi: {
+    url:DATA_API_URL,
+    getToken:getCloudJwt,
+  },
 });
 const TABLE='pocket_snapshots';
 const FIELDS='user_id,revision,source_synced_at,updated_at,snapshot';
@@ -49,7 +60,7 @@ export const cloudAuth={
 export const cloudStorage={
   async read(userId){
     const id=validUserId(userId);
-    const data=check(await neon.from(TABLE).select(FIELDS).eq('user_id',id).limit(1),'Cloud read');
+    const data=check(await privateDb.from(TABLE).select(FIELDS).eq('user_id',id).limit(1),'Cloud read');
     const row=Array.isArray(data)?data[0]||null:null;
     return verifyOwnedRecord(row,id);
   },
@@ -70,9 +81,9 @@ export const cloudStorage={
     };
     let response;
     if(decision.action==='insert'){
-      response=await neon.from(TABLE).insert(row).select(FIELDS);
+      response=await privateDb.from(TABLE).insert(row).select(FIELDS);
     }else{
-      response=await neon.from(TABLE).update(row)
+      response=await privateDb.from(TABLE).update(row)
         .eq('user_id',id).eq('revision',decision.expectedRevision).select(FIELDS);
     }
     if(response.error){
@@ -86,6 +97,6 @@ export const cloudStorage={
   },
   async remove(userId){
     const id=validUserId(userId);
-    check(await neon.from(TABLE).delete().eq('user_id',id),'Delete cloud data');
+    check(await privateDb.from(TABLE).delete().eq('user_id',id),'Delete cloud data');
   }
 };
