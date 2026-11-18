@@ -113,6 +113,17 @@ function meta(label,value){
     escape(String(value))+'</b></div>';
 }
 
+function assignmentOutline(snapshot, courseId, currentId) {
+  return '<aside class="reader-outline" aria-label="Assignment outline"><div class="reader-outline-card">' +
+    '<span class="reader-outline-label">COURSE ASSIGNMENTS</span>' +
+    groupedAssignments(snapshot, courseId).map(group =>
+      '<div class="reader-outline-group"><strong>' + escape(group.name) + '</strong>' +
+      group.items.map(item => '<button type="button" class="' + (item.id === currentId ? 'current' : '') +
+        '" data-open-assignment-course="' + escape(courseId) +
+        '" data-open-assignment-id="' + escape(item.id) + '">' + escape(item.title) + '</button>').join('') +
+      '</div>').join('') + '</div></aside>';
+}
+
 export function buildAssignmentReader(snapshot,courseId,id){
   const a=assignmentInfo(snapshot,courseId,id);
   if(!a)return '';
@@ -145,7 +156,7 @@ export function buildAssignmentReader(snapshot,courseId,id){
   if(a.late)extra.push(meta('Late submission','Yes (according to Quercus)'));
   if(a.moduleNames.length)extra.push(meta('Appears in Modules',a.moduleNames.join(', ')));
   const url=/^https:\/\/q\.utoronto\.ca\//.test(a.url)?a.url:'https://q.utoronto.ca/courses/'+a.courseId+'/assignments/'+a.id;
-  return '<div class="reader-article-shell assignment-reader">'+
+  return '<div class="reader-screen assignment-screen">'+assignmentOutline(snapshot,courseId,String(id))+'<div class="reader-article-shell assignment-reader">'+
     '<nav class="reader-breadcrumb"><button type="button" data-back-assignments>Assignments</button>'+
     '<span>›</span><button type="button" data-go-assignment-course="'+escape(a.courseId)+'">'+
     escape(a.course)+'</button></nav>'+
@@ -161,5 +172,5 @@ export function buildAssignmentReader(snapshot,courseId,id){
     '" target="_blank" rel="noopener noreferrer">Open in Quercus'+(['open','overdue','missing'].includes(a.statusCode)?' to submit':'')+' ↗</a>'+
     '<p>Quercus Pocket is read-only. Submit work, edit submissions, and check final grading directly in Quercus.</p></div>'+
     '<nav class="reader-pagination" aria-label="Assignment navigation">'+
-    button(previous,'previous')+button(next,'next')+'</nav></div>';
+    button(previous,'previous')+button(next,'next')+'</nav></div></div>';
 }
