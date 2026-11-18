@@ -259,7 +259,8 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
   async function initialize(){
     if(initialized)return;
     initialized=true;
-    state.guestBackup=(await readLocal('latest'))?.value||null;
+    const oldSaved=await readLocal('latest');
+    state.guestBackup=oldSaved?.kind==='json' ? oldSaved.value : null;
     state.hasUsedCloudAccount=Boolean(await readAuth('has-used-account'));
     const last=await readAuth('last-account');
     try{
