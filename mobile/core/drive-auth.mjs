@@ -5,7 +5,9 @@ export function validGoogleClientId(value){
 }
 export class DriveAuthorization{
   constructor(googleObject=()=>globalThis.google,{
-    timeoutMs=90000,schedule=setTimeout,cancel=clearTimeout
+    timeoutMs=90000,
+    schedule=(callback,delay)=>globalThis.setTimeout(callback,delay),
+    cancel=timerId=>globalThis.clearTimeout(timerId)
   }={}){
     this.googleObject=googleObject;
     this.timeoutMs=timeoutMs;
