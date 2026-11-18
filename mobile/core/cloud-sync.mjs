@@ -1,7 +1,7 @@
 // Pure cloud-sync safety rules. Authentication and database access live in
 // cloud-client.mjs; no Quercus credentials or user data are bundled in this file.
 export const MAX_CLOUD_BYTES = 22 * 1024 * 1024;
-const SECRET_FIELD = /^(?:access_?token|api_?token|refresh_?token|authorization|password|secret|client_?secret|cookie|private_?key)$/i;
+const SECRET_FIELD = /^(?:token|access_?token|api_?token|auth_?token|bearer_?token|refresh_?token|authorization|password|secret|client_?secret|cookie|private_?key)$/i;
 
 export function captureMillis(snapshot) {
   if (!snapshot || !Array.isArray(snapshot.courses) || !snapshot.courseData) return null;
