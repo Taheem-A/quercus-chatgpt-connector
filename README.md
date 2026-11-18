@@ -6,6 +6,33 @@ It is designed for one job: **run it when you need it, click Sync Quercus, colle
 
 There is no cloud database, no Vercel requirement, no Docker, and no npm dependency install. The server uses Node.js built-ins and runs on `127.0.0.1` only.
 
+## Google Drive & file organizer (manual integration)
+
+Quercus Pocket now includes **More → Drive & file organizer**, independent of its optional Local AI Gateway. It does not use paid AI APIs.
+
+### Google account setup (user action required)
+
+This website requires its **own** Google OAuth client: a ChatGPT-connected Google Drive account cannot automatically authorize Quercus Pocket. In Google Cloud Console, enable the **Google Drive API**, configure a Google OAuth consent screen, add your own Google account as a test user, and create an OAuth **Web application** client ID. Add `https://quercus-pocket.vercel.app` as an **Authorized JavaScript origin** (and `http://127.0.0.1:5173` for local Vite development). In Pocket's Drive settings, paste the **public OAuth client ID**, not a client secret, then select **Connect Google Drive**.
+
+The browser requests `drive.metadata.readonly` to inspect existing folder and file metadata, plus `drive.file` for app-created files. The latter may require Google Picker access to specific existing destination folders: a successful scan does **not** guarantee write permission. If Google rejects a write, the app reports the error without falling back to unrestricted Drive-wide permissions. Google may require OAuth verification for broad public use.
+
+### Safety-first workflow
+
+1. Connect the intended Google account and check the email displayed in Pocket. Explicitly confirm it before uploads.
+2. Paste your **existing semester folder URL** (e.g. the Fall 2026 folder) and run the **read-only folder scan**. Pocket does not crawl the entire Drive.
+3. Verify course-to-folder mappings. Unique course-code matches are suggested; any unusual folders are mapped manually.
+4. Review attachments organized by original Canvas course/folder provenance and conservative deterministic category rules. Unclear or conflicting destinations remain in the **Review** queue. Choose an explicit folder override if appropriate.
+5. Select ready files and confirm the exact number before any transfer. The app rechecks for duplicates before every upload and calls **create-new-file APIs only**. No existing files are moved, overwritten, deleted, renamed or shared.
+6. Optionally select **Save ChatGPT-ready snapshot ZIP to Drive** to create a new ZIP (without attachment bytes) in a dedicated `Quercus Pocket Exports` folder under the selected term folder; creation is also opt-in.
+
+Existing Quercus attachment downloads may be blocked by browser CORS even when their download links work in Safari. Failed file transfers remain unsynced; a file is **never claimed as uploaded** on failure. The ZIP-to-Drive export is browser-generated and avoids those binary retrieval problems.
+
+### Privacy and limitations
+
+Google OAuth access tokens remain **in browser memory only**, aren't stored in localStorage, Neon or Vercel, and expire after the session. Public client ID, course folder IDs, and explicit per-file folder overrides are saved locally per Pocket account; they don't automatically sync to other devices. The root scan is bounded (maximum 2,500 entries, depth 5). Large attachments are capped at 50 MiB for browser upload. No background scheduler, persistent refresh token backend, Drive Picker, or local AI classification is included in this milestone. A future milestone can add an authenticated desktop uploader for large/cross-origin-blocked binary transfers.
+
+---
+
 ## Complete Quercus archives — three selectable modes
 
 Quercus Pocket's **Export** dialog now offers three distinct, read-only archive formats, while preserving its original JSON, ChatGPT Markdown, readable Markdown, calendar ICS and legacy metadata ZIP options.
