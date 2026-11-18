@@ -71,7 +71,13 @@
       <label class="account-field">Password<input id="authPassword" type="password" autocomplete="current-password" placeholder="Your password"></label>
       <button id="authSubmit" type="button" class="button account-primary">Sign in</button>
       <button id="authGoogle" type="button" class="button outline account-primary">Continue with Google</button>
-      <p class="hint">Accounts use managed Neon Auth with email verification. The Quercus token is never uploaded to the account database.</p>
+      <div id="authVerification" class="auth-verification" hidden>
+        <p>Enter the email verification code sent to your inbox.</p>
+        <label class="account-field">Verification code<input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="Email code"></label>
+        <button id="authVerify" type="button" class="button account-primary">Verify email code</button>
+      </div>
+      <button id="authShowVerification" type="button" class="account-text-action">I already have a verification code</button>
+      <p class="hint">Accounts use managed Neon Auth with email verification codes. The Quercus token is never uploaded to the account database.</p>
       <button id="guestBackupButton" type="button" class="button outline account-primary" hidden>Open my existing device-only backup</button>
     </div>
     <div id="authSignedIn" hidden>
