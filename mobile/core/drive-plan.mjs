@@ -15,7 +15,7 @@ export function parseDriveFolderId(value){
 }
 export function courseCode(course){
   const name=String(course.course_code||course.name||'');
-  return /^[A-Z]{2,4}\s*\d{3}[A-Z]?/.exec(name.toUpperCase())?.[0].replace(/\s/g,'')||
+  return /^[A-Z]{2,4}\s*\d{3}/.exec(name.toUpperCase())?.[0].replace(/\s/g,'')||
     name.split(/\s/)[0].toUpperCase();
 }
 export function makeDriveTree(rootId,items){
