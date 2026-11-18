@@ -3,8 +3,12 @@ import { captureMillis, decideUpload, sanitizeForCloud, verifyOwnedRecord } from
 
 // This HTTPS endpoint contains no credentials. Neon Auth stores sessions and
 // injects a short-lived, user-scoped JWT into RLS-protected Data API requests.
-const DATABASE_URL='https://ep-proud-poetry-bd2f21s9.c-8.us-east-2.aws.neon.tech/quercus_pocket';
-const neon=createClient(DATABASE_URL);
+const AUTH_URL='https://ep-proud-poetry-bd2f21s9.neonauth.c-8.us-east-2.aws.neon.tech/quercus_pocket/auth';
+const DATA_API_URL='https://ep-proud-poetry-bd2f21s9.apirest.c-8.us-east-2.aws.neon.tech/quercus_pocket/rest/v1';
+const neon=createClient({
+  auth: {url:AUTH_URL},
+  dataApi: {url:DATA_API_URL}
+});
 const TABLE='pocket_snapshots';
 const FIELDS='user_id,revision,source_synced_at,updated_at,snapshot';
 
