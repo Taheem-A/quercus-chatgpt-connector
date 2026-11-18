@@ -32,7 +32,7 @@ export class DriveClient{
       response=await this.fetcher(target.href,{
         method,headers:{Authorization:'Bearer '+token,...headers},
         ...(body!=null?{body}:{}),
-        cache:'no-store',credentials:'omit',signal,
+        cache:'no-store',credentials:'omit',redirect:'error',signal,
       });
     }catch{throw Error('Could not reach Google Drive. Check your connection and try again.');}
     if(!response.ok)throw Error(failMessage(response.status));
