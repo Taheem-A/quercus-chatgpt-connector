@@ -13,9 +13,16 @@ export function safeArchiveSegment(v,fallback='unnamed'){
 export function fileIdsInHtml(value){
   const result=new Set();
   if(typeof value!=='string')return [];
-  // Files can appear as URLs, API endpoints, image src or iframe previews.
-  const pattern=/(?:https?:\/\/q\.utoronto\.ca)?\/(?:api\/v1\/)?(?:(?:courses|groups|users)\/\d+\/)?files\/(\d+)(?=[/?#"'&\s<]|$)/gi;
-  for(const m of value.matchAll(pattern))result.add(m[1]);
+  // Capture absolute URLs as a unit, so a foreign URL such as
+  // https://evil.example/files/123 cannot slip through as "/files/123".
+  const pattern=/https?:\/\/[^\s"'<>]+|\/(?:api\/v1\/)?(?:(?:courses|groups|users)\/\d+\/)?files\/\d+(?:\/[^\s"'<>]*)?/gi;
+  for(const match of value.matchAll(pattern)){
+    let url;
+    try{url=new URL(match[0],'https://q.utoronto.ca');}catch{continue;}
+    if(url.origin!=='https://q.utoronto.ca')continue;
+    const item=/^\/(?:api\/v1\/)?(?:(?:courses|groups|users)\/\d+\/)?files\/(\d+)(?:\/|$)/.exec(url.pathname);
+    if(item)result.add(item[1]);
+  }
   return [...result];
 }
 const validId=v=>/^\d+$/.test(String(v??''));
