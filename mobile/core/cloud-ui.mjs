@@ -148,8 +148,8 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
         state.cloudError='';
         if(!state.snapshot)updateSnapshot(snapshot);
         await writeLocal({kind:'json',value:snapshot},localKey(id));
-        state.cloudEnabled=true;
-        await writeAuth(prefKey(id),true);
+        // An explicitly approved one-time upload is NOT permission for
+        // future automatic uploads. The separate toggle controls that.
         msg(result.action==='saved'?'Your account now has the newest snapshot. Other devices can download it.':'Cloud already has this version.',true);
       }else{
         state.cloudError=result.message || 'Cloud was changed by another device. Nothing was overwritten.';
