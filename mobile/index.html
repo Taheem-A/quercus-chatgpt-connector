@@ -7,8 +7,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Quercus Pocket">
-  <meta name="description" content="Sync Quercus directly from your phone, with offline access to saved courses">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; frame-src https: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="description" content="Your cross-platform university workspace — courses, assignments and Pages, with optional private cloud sync">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; frame-src https: blob:; connect-src 'self' https://ep-proud-poetry-bd2f21s9.apirest.c-8.us-east-2.aws.neon.tech; object-src 'none'; base-uri 'none'; form-action 'none'">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
@@ -17,8 +17,9 @@
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <div class="identity"><div class="mark">Q</div><div><strong>Quercus Pocket</strong><small>Private course reader</small></div></div>
+      <div class="identity"><div class="mark">Q</div><div><strong>Quercus Pocket</strong><small>University workspace</small></div></div>
       <div class="toolbar">
+        <button id="accountButton" class="account-button" title="Account and cloud sync" type="button" aria-label="Account and cloud sync"><span aria-hidden="true">♙</span><span id="accountLabel">Sign in</span></button>
         <button id="connectButton" class="icon-button" title="Sync Quercus" type="button" aria-label="Sync Quercus directly from phone">⟳</button>
         <button id="exportButton" class="icon-button" title="Export your Quercus snapshot" type="button" aria-label="Export Quercus data">↧</button>
         <button id="importButton" class="icon-button" title="Import a saved export" type="button" aria-label="Import Quercus export">↥</button>
@@ -31,6 +32,7 @@
         <progress id="liveSyncProgress" max="100" value="0"></progress>
       </div>
       <div class="search-wrap"><label class="sr-only" for="search">Search everything</label><input id="search" type="search" placeholder="Search courses, pages, deadlines…" autocomplete="off"></div>
+      <div id="cloudBanner" class="cloud-banner" hidden role="status" aria-live="polite"><span id="cloudBannerText"></span><button id="cloudBannerAction" type="button" hidden></button></div>
       <div id="content" aria-live="polite"></div>
     </main>
     <nav class="bottom-nav" aria-label="Sections">
@@ -56,9 +58,59 @@
       <a id="filePreviewDownload" class="button" href="https://q.utoronto.ca/" target="_blank" rel="noopener noreferrer" download>Download ↧</a>
     </div>
   </dialog>
+  <dialog id="accountDialog" class="account-dialog" aria-label="Account and cloud synchronization">
+    <form method="dialog" class="dialog-head"><strong>Account & cloud sync</strong><button class="icon-button" aria-label="Close">✕</button></form>
+    <div id="authSignedOut">
+      <p>Sign in to make your university information available across your iPhone, tablet and laptop. No existing course data is uploaded just by signing in.</p>
+      <div class="account-tabs" role="group" aria-label="Sign in or create account">
+        <button id="signInMode" class="active" type="button">Sign in</button>
+        <button id="signUpMode" type="button">Create account</button>
+      </div>
+      <label id="authNameLabel" class="account-field" hidden>Display name<input id="authName" autocomplete="name" placeholder="Your name"></label>
+      <label class="account-field">Email<input id="authEmail" inputmode="email" type="email" autocomplete="email" placeholder="you@example.com"></label>
+      <label class="account-field">Password<input id="authPassword" type="password" autocomplete="current-password" placeholder="Your password"></label>
+      <button id="authSubmit" type="button" class="button account-primary">Sign in</button>
+      <button id="authGoogle" type="button" hidden disabled aria-hidden="true">Google sign-in is not enabled</button>
+      <button id="authForgotPassword" type="button" class="account-text-action">Forgot password?</button>
+      <div id="authPasswordRecovery" class="auth-verification" hidden>
+        <p>Reset your account password with an email verification code.</p>
+        <label class="account-field">Account email<input id="authResetEmail" type="email" autocomplete="email" placeholder="you@example.com"></label>
+        <button id="authSendResetCode" type="button" class="button outline account-primary">Send recovery code</button>
+        <label class="account-field">Recovery code<input id="authResetOtp" inputmode="numeric" type="text" autocomplete="one-time-code" maxlength="12"></label>
+        <label class="account-field">New password<input id="authNewPassword" type="password" autocomplete="new-password" placeholder="At least 10 characters"></label>
+        <button id="authCompleteReset" type="button" class="button account-primary">Reset password</button>
+        <button id="authCancelReset" type="button" class="account-text-action">Back to sign in</button>
+      </div>
+      <div id="authVerification" class="auth-verification" hidden>
+        <p>Enter the email verification code sent to your inbox.</p>
+        <label class="account-field">Verification code<input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="Email code"></label>
+        <button id="authVerify" type="button" class="button account-primary">Verify email code</button>
+      </div>
+      <button id="authShowVerification" type="button" class="account-text-action">I already have a verification code</button>
+      <p class="hint">Accounts use managed Neon Auth with email verification codes. The Quercus token is never uploaded to the account database.</p>
+      <button id="guestBackupButton" type="button" class="button outline account-primary" hidden>Open my existing device-only backup</button>
+    </div>
+    <div id="authSignedIn" hidden>
+      <p class="account-identity">Signed in as <strong id="signedInEmail"></strong></p>
+      <p id="cloudAccountStatus" class="hint">Checking your private cloud workspace…</p>
+      <div class="account-actions">
+        <button id="cloudCheckNow" type="button" class="button outline">Check cloud for updates</button>
+        <button id="cloudUploadNow" type="button" class="button">Upload this device's saved snapshot</button>
+        <button id="cloudUseRemote" type="button" class="button outline" hidden>Use newer cloud copy (keep local backup)</button>
+        <button id="cloudRestoreConflict" type="button" class="button outline" hidden>Restore saved local conflict backup</button>
+        <button id="cloudRestoreBackup" type="button" class="button outline" hidden>Use existing device-only backup</button>
+      </div>
+      <label class="account-toggle"><input type="checkbox" id="cloudAutoUpload"> Automatically upload after Quercus syncs on this device</label>
+      <p class="hint">Cloud access is private to your signed-in account. The first upload is always your choice; previously stored device data is preserved.</p>
+      <div class="account-divider"></div>
+      <button id="authSignOut" type="button" class="button outline">Sign out</button>
+      <button id="cloudDelete" type="button" class="button danger-outline">Delete my cloud snapshot</button>
+    </div>
+    <p id="authMessage" role="status" aria-live="polite"></p>
+  </dialog>
   <dialog id="connectDialog">
     <form method="dialog" class="dialog-head"><strong>Connect to Quercus</strong><button class="icon-button" aria-label="Close">✕</button></form>
-    <p>Sync all accessible courses, assignments, announcements and Module pages directly from this iPhone. Your laptop does not need to be on.</p>
+    <p>Sync accessible courses, assignments, announcements and Module pages directly from this device. Other devices can receive updates through your optional signed-in cloud workspace.</p>
     <label class="token-label" for="tokenInput">Personal Quercus API access token</label>
     <input id="tokenInput" class="token-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste your Quercus access token">
     <p class="hint">Find or generate your personal token in Quercus → Account → Settings → Approved Integrations. Never share it in chat or upload it as a file.</p>
@@ -69,7 +121,7 @@
   </dialog>
   <dialog id="exportDialog">
     <form method="dialog" class="dialog-head"><strong>Export Quercus data</strong><button class="icon-button" aria-label="Close">✕</button></form>
-    <p>Create an export from the latest data saved on this phone. No data is uploaded to the server. Use Share to save it in Files or send to another device.</p>
+    <p>Create an export from the latest data saved on this device. Exports are generated locally. On iPhone use Share to save to Files; on desktop use Download.</p>
     <div id="exportOptions" class="export-options">
       <button type="button" class="button" data-export="json">Complete JSON (.json)</button>
       <button type="button" class="button outline" data-export="chatgpt">ChatGPT Markdown (.md)</button>

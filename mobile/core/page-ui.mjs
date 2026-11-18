@@ -79,6 +79,19 @@ function resourceList(html) {
     '</div></details>';
 }
 
+function pageOutline(snapshot, courseId, currentSlug) {
+  return '<aside class="reader-outline" aria-label="Course page outline"><div class="reader-outline-card">' +
+    '<span class="reader-outline-label">COURSE CONTENTS</span>' +
+    courseModulePages(snapshot, courseId).map(group =>
+      '<div class="reader-outline-group"><strong>' + escape(group.name) + '</strong>' +
+      group.items.map(item => '<button type="button" class="' +
+        (item.slug === currentSlug ? 'current' : '') +
+        '" data-open-page-course="' + escape(courseId) +
+        '" data-open-page-slug="' + escape(item.slug) + '">' + escape(item.title) + '</button>').join('') +
+      '</div>').join('') +
+    '</div></aside>';
+}
+
 export function buildPageReader(snapshot, courseId, slug) {
   const page = savedPage(snapshot, courseId, slug);
   if (!page) return '';
@@ -100,7 +113,7 @@ export function buildPageReader(snapshot, courseId, slug) {
     '"><small>' + (direction === 'previous' ? '‹ Previous page' : 'Next page ›') +
     '</small><b>' + escape(item.title) + '</b></button>' : '<span></span>';
   const chapterItems = currentGroup?.items || [];
-  return '<div class="reader-article-shell">' +
+  return '<div class="reader-screen">' + pageOutline(snapshot, courseId, slug) + '<div class="reader-article-shell">' +
     '<nav class="reader-breadcrumb"><button type="button" data-back-courses>Courses</button><span>›</span><button type="button" data-go-course="' +
     escape(courseId) + '">' + escape(courseTitle(course || {id: courseId})) +
     '</button></nav><div class="reader-article-top"><div class="reader-kicker">' +
@@ -115,5 +128,5 @@ export function buildPageReader(snapshot, courseId, slug) {
     '<article class="reader-document">' + main + resourceSection + '</article>' +
     '<div class="reader-document-footer">' + source + '</div>' +
     '<nav class="reader-pagination" aria-label="Page navigation">' +
-    navButton(previous, 'previous') + navButton(next, 'next') + '</nav></div>';
+    navButton(previous, 'previous') + navButton(next, 'next') + '</nav></div></div>';
 }

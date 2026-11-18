@@ -192,3 +192,127 @@
  .assignment-status.status-graded{background:#154c39;color:#b0eccc}
  .assignment-status.status-overdue,.assignment-status.status-missing{background:#54351c;color:#f9d5a0}
 }
+
+
+/* v2: responsive cross-platform workspace, account and cloud status */
+:root { --app-navy:#101d32; --app-teal:#197b70; --app-divider:#e0e7ed; --app-bg:#f5f7fa; }
+.account-button{display:flex;align-items:center;gap:7px;justify-content:center;border:1px solid #ffffff30;background:#ffffff18;color:#fff;border-radius:12px;height:38px;padding:0 11px;font-size:12px;font-weight:750;white-space:nowrap}
+.account-button span:first-child{font-size:20px;line-height:1}
+.account-button.signed-in{border-color:#5bbaac;color:#baf2e5}
+.cloud-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:3px 0 16px;border:1px solid #c2e4de;background:#ecf7f4;border-radius:12px;padding:12px 14px;font-size:12px;line-height:1.5;color:#246960}
+.cloud-banner[hidden]{display:none}
+.cloud-banner button{white-space:nowrap;background:#fff;color:#15796f;border:1px solid #a8d6cc;border-radius:9px;padding:7px 10px;font-weight:750;font-size:11px}
+.cloud-banner.cloud-warning{background:#fff6e9;border-color:#efdbbc;color:#905a1b}
+.cloud-banner.cloud-warning button{color:#885718}
+.account-dialog{max-width:485px}
+.account-tabs{display:grid;grid-template-columns:1fr 1fr;background:#eff3f7;border-radius:11px;padding:4px;gap:4px;margin:15px 0}
+.account-tabs button{border:0;background:transparent;color:#65788c;border-radius:8px;padding:10px 12px;font-size:13px;font-weight:700}
+.account-tabs button.active{background:#fff;color:#176b63;box-shadow:0 1px 5px #10203017}
+.account-field{display:flex;flex-direction:column;gap:6px;margin:12px 0;color:#354b62;font-size:12px;font-weight:700}
+.account-field[hidden]{display:none}
+.account-field input{display:block;width:100%;border:1px solid #cfdae4;border-radius:11px;padding:12px;font-size:15px;color:#17243a;background:#fff}
+.account-primary{display:block;width:100%;margin:12px 0 9px;text-align:center}
+.account-identity{font-size:13px!important;margin-top:17px!important}
+.account-identity strong{display:block;margin-top:5px;overflow-wrap:anywhere;color:#233951;font-size:15px}
+.account-actions{display:grid;gap:9px;margin:18px 0}
+.account-actions .button{text-align:center}
+.account-toggle{display:flex;align-items:flex-start;gap:9px;font-size:13px;line-height:1.5;color:#2f485b;margin:17px 0}
+.account-toggle input{width:18px;height:18px;accent-color:#168276;flex:0 0 auto}
+.account-divider{height:1px;background:#e2e9ee;margin:15px 0}
+.danger-outline{background:#fff9f7!important;color:#a04a36!important;border:1px solid #e3bbb2!important}
+#authMessage{min-height:20px;font-size:12px;line-height:1.5;margin:14px 0 0;color:#a24e39}
+#authMessage.success{color:#187d6b}
+#authSubmit:disabled,#authGoogle:disabled,.account-actions button:disabled{opacity:.45;cursor:wait}
+
+/* Phone portrait: keep the familiar one-column reader and bottom nav. */
+@media(max-width:599px) and (orientation:portrait){
+ .app-shell{max-width:none}
+ .main{padding:21px 15px calc(100px + env(safe-area-inset-bottom))}
+ .topbar{padding:0 12px}
+ .identity small{font-size:10px}
+ .account-button{width:37px;padding:0}
+ .account-button #accountLabel{display:none}
+ .toolbar{gap:5px}
+ .toolbar .icon-button{padding:8px 10px}
+ .bottom-nav button{min-height:59px}
+ .reader-article-top h1{font-size:25px}
+}
+/* Landscape phones and small tablets: more efficient density, two-pane reader. */
+@media(min-width:600px) and (max-width:979px){
+ .app-shell{max-width:none}
+ .topbar{padding:0 24px}
+ .main{padding:25px 24px 110px;max-width:980px;margin:0 auto;width:100%}
+ .bottom-nav{max-width:760px}
+ .reader-course-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .reader-screen{display:grid;grid-template-columns:minmax(175px,30%) minmax(0,1fr);gap:19px;align-items:start}
+ .reader-article-shell{min-width:0;max-width:none}
+ .reader-outline{display:block;position:sticky;top:84px;max-height:calc(100dvh - 165px);overflow-y:auto}
+ .reader-document{padding:19px 23px}
+}
+@media(max-width:760px) and (orientation:landscape){
+ .topbar{height:52px}
+ .main{padding-top:13px}
+ .bottom-nav button{min-height:47px;flex-direction:row;font-size:11px}
+ .bottom-nav button span{font-size:17px}
+ .bottom-nav{padding-bottom:env(safe-area-inset-bottom)}
+ .reader-outline{top:64px}
+}
+/* Full desktop: persistent sidebar, rich reading pane, no fake mobile-width box. */
+@media(min-width:980px){
+ :root{background:#edf1f5}
+ .app-shell{width:100%;max-width:none;min-height:100dvh;display:grid;grid-template-columns:236px minmax(0,1fr);grid-template-rows:70px minmax(0,1fr);background:#f5f7fa}
+ .topbar{grid-column:1/-1;grid-row:1;position:sticky;top:0;z-index:8;padding:0 35px}
+ .main{grid-column:2;grid-row:2;width:100%;max-width:1500px;margin:0 auto;min-width:0;padding:36px clamp(22px,3.7vw,72px) 80px}
+ .main.reader-mode{padding-top:28px}
+ .hero h1{font-size:38px}
+ .hero{padding-bottom:17px}
+ .search-wrap{max-width:870px}
+ .bottom-nav{grid-column:1;grid-row:2;position:sticky;top:70px;left:auto;right:auto;bottom:auto;margin:0;width:236px;max-width:none;height:calc(100dvh - 70px);display:flex;flex-direction:column;align-items:stretch;justify-content:start;gap:7px;border-top:0;border-right:1px solid #e0e7ef;border-radius:0;box-shadow:none;padding:25px 12px;background:#fff}
+ .bottom-nav button{min-height:50px;flex-direction:row;justify-content:flex-start;gap:16px;text-align:left;padding:0 16px;border-radius:12px;color:#51627a;font-size:14px;font-weight:650}
+ .bottom-nav button span{font-size:22px;display:inline-grid;place-items:center;width:26px}
+ .bottom-nav button.selected{background:#eaf5f2;color:#126e65;font-weight:800}
+ .bottom-nav button:hover{background:#f1f5f7}
+ .stack.two{grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+ .reader-course-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .reader-screen{display:grid;grid-template-columns:minmax(210px,270px) minmax(0,1fr);gap:26px;align-items:start}
+ .reader-outline{display:block;position:sticky;top:98px;max-height:calc(100dvh - 128px);overflow-y:auto}
+ .reader-article-shell{max-width:900px;width:100%;min-width:0;margin:0}
+ .reader-document{padding:29px clamp(24px,3vw,43px)}
+ .reader-library-header,.reader-section-heading{padding-top:4px}
+ .reader-module-list{max-width:1000px}
+ .reader-page-row:hover{background:#f2f9f7}
+ .reader-course-tile:hover{border-color:#a8d1c8;background:#fbfefd}
+ .file-preview-dialog{max-width:min(1100px,92vw)}
+}
+.reader-screen{min-width:0}
+.reader-outline{display:none}
+.reader-outline-card{background:#fff;border:1px solid #e0e7ed;border-radius:14px;padding:13px;box-shadow:0 2px 11px #10203006}
+.reader-outline-label{display:block;font-size:10px;color:#6e8090;letter-spacing:.1em;font-weight:800;padding:3px 7px 10px}
+.reader-outline-group{margin-top:7px}
+.reader-outline-group strong{display:block;margin:0 0 5px;font-size:11px;font-weight:800;color:#63768b;padding:6px 7px}
+.reader-outline button{display:block;width:100%;border:0;border-radius:8px;padding:9px 10px;text-align:left;color:#39536a;font-size:12px;line-height:1.45;background:none;overflow-wrap:anywhere}
+.reader-outline button.current{background:#e5f4ef;color:#126b61;font-weight:800}
+.reader-outline button:hover{background:#eff6f5}
+.reader-article-shell{max-width:930px}
+@media(prefers-color-scheme:dark){
+ :root{--app-bg:#0e1828}
+ .app-shell,.main{background:#0e1828}
+ .account-dialog .account-tabs{background:#25374c}
+ .account-dialog .account-tabs button.active,.account-field input{background:#17263b;color:#e5ecf7}
+ .account-field,.account-identity strong,.account-toggle{color:#c8d7e7}
+ .account-field input{border-color:#3b5067}
+ .cloud-banner{background:#183b36;border-color:#2b6659;color:#b1e8db}
+ .cloud-banner button{background:#224c43;color:#d0f9ee;border-color:#367a6b}
+ .cloud-banner.cloud-warning{background:#4b341e;color:#eed0a7;border-color:#715037}
+ .account-divider{background:#35485f}
+ .reader-outline-card{background:#17263b;border-color:#2d4056}
+ .reader-outline-group strong,.reader-outline-label{color:#a0b5cc}
+ .reader-outline button{color:#c9d8e5}
+ .reader-outline button.current,.reader-outline button:hover{background:#21423f;color:#bff0de}
+ @media(min-width:980px){.bottom-nav{background:#142239;border-color:#304157}.bottom-nav button:hover{background:#20344b}.bottom-nav button.selected{background:#21423f;color:#c3f2df}}
+}
+
+/* Account recovery controls remain subtle and accessible. */
+.account-text-action{background:transparent;border:0;color:#19766c;text-decoration:underline;text-underline-offset:3px;font-size:12px;font-weight:700;padding:8px 0;cursor:pointer}
+#authGoogle[hidden]{display:none!important}
+.auth-verification[hidden]{display:none!important}
