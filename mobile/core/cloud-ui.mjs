@@ -139,8 +139,9 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
   }
   async function upload(skipConfirm=false){
     if(!userId()||state.offlineSession){openAccount();msg('Connect to the internet and sign in again before uploading data.');return;}
-    const snapshot=state.snapshot||state.guestBackup;
-    if(!snapshot){msg('There is no locally saved JSON snapshot to upload. Sync Quercus or import Complete JSON first.');return;}
+    const snapshot=state.snapshot;
+    // Unscoped pre-account data must first be reviewed and explicitly adopted.
+    if(!snapshot){msg(state.guestBackup?'Choose Use existing device-only backup to review it inside your account before uploading.':'There is no locally saved JSON snapshot to upload. Sync Quercus or import Complete JSON first.');return;}
     const decision=decideUpload(snapshot,state.cloudRecord);
     if(['remote-newer','conflict'].includes(decision.action)){
       msg(decision.message||'The cloud version is newer. Download or sync again before uploading.');
@@ -314,7 +315,7 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
         }
       }
     }catch(error){
-      if(!navigator.onLine && last?.id)await adoptOfflineAccount(last);
+      if(last?.id)await adoptOfflineAccount(last); // Also when auth service is temporarily unreachable
       else {
         state.cloudError='Account service unavailable. Device-only data has not been erased.';
         if(state.hasUsedCloudAccount){state.token=null;updateSnapshot(null);}
