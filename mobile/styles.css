@@ -369,3 +369,65 @@
  .announcement-pill{background:#5a451e;color:#efd49c}
  .announcement-pill.unread{background:#20463c;color:#acebd7}
 }
+
+
+/* Google Drive integration: existing folder maps and explicitly approved writes */
+dialog.drive-dialog{width:min(920px,calc(100vw - 28px));max-width:920px;max-height:min(91vh,950px);overflow:auto;padding:22px 24px}
+.drive-dialog .dialog-head{position:sticky;top:-22px;background:#fff;z-index:2;padding:12px 2px;border-bottom:1px solid #e0e7ef;margin-bottom:14px}
+.drive-dialog h3{font-size:15px;color:#254256;margin:0}
+.drive-dialog .drive-setup{border:1px solid #d7e4e7;background:#f6faf9;border-radius:11px;padding:12px 14px;margin:12px 0;font-size:12px}
+.drive-setup summary{cursor:pointer;font-weight:750;color:#176d68}
+.drive-setup code{font-size:11px;overflow-wrap:anywhere}
+.drive-dialog .drive-field{display:grid;gap:7px;margin:12px 0;font-size:12px;font-weight:750;color:#3f566a}
+.drive-field input,.drive-map-row select,.drive-override select,.drive-title-row select{background:#fff;color:#263e53;border:1px solid #cbd9df;border-radius:9px;padding:10px;font:inherit;min-width:0;width:100%;max-width:100%}
+.drive-toolbar{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}
+.drive-toolbar .button{font-size:12px;flex:0 1 auto}
+.drive-identity{font-weight:750;color:#176d68}
+.drive-confirm{display:flex;align-items:flex-start;gap:9px;padding:12px 13px;border:1px solid #cce1dc;background:#eef8f5;border-radius:11px;font-size:12px;line-height:1.45}
+.drive-confirm input{flex:0 0 auto;width:17px;height:17px;margin:1px 0 0}
+.drive-area{margin-top:19px;border-top:1px solid #d9e4ec;padding-top:17px}
+.drive-map-row{display:grid;grid-template-columns:minmax(125px,.85fr) minmax(190px,1.3fr);align-items:center;gap:12px;border:1px solid #dce7ed;padding:8px 12px;border-radius:10px;margin:7px 0;font-size:12px}
+.drive-map-row span{min-width:0}
+.drive-map-row span strong,.drive-map-row span small{display:block;overflow-wrap:anywhere}
+.drive-map-row span small{color:#7690a0;margin-top:4px;font-size:10px}
+.drive-title-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.drive-title-row select{width:auto;min-width:140px;font-size:12px}
+.drive-file-preview{display:grid;gap:10px;max-height:440px;overflow:auto;margin-top:11px}
+.drive-preview-row{border:1px solid #dbe7eb;border-radius:11px;padding:12px 13px;background:#fbfdfd;min-width:0}
+.drive-file-heading{display:flex;align-items:start;justify-content:space-between;gap:10px}
+.drive-file-heading label{display:flex;align-items:start;gap:8px;flex:1;min-width:0;font-size:12px}
+.drive-file-heading strong{overflow-wrap:anywhere}
+.drive-file-heading input{margin:2px 0 0;flex:0 0 auto}
+.drive-file-status{text-transform:capitalize;border-radius:7px;background:#f5e8d8;color:#875e2c;padding:4px 6px;font-size:10px;font-weight:750;white-space:nowrap}
+.drive-file-status.ready{background:#dff3e9;color:#126b48}
+.drive-file-status.already-uploaded{background:#e4ebf4;color:#4c6481}
+.drive-preview-row p{font-size:11px;margin:5px 0;overflow-wrap:anywhere}
+.drive-preview-row a{display:inline-block;font-size:11px;margin-top:5px;color:#147d74;font-weight:750}
+.drive-override{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:11px;font-weight:650}
+.drive-override select{flex:1;min-width:150px;font-size:11px}
+.drive-live{margin:15px 0 8px;padding:12px 13px;border-radius:10px;background:#eaf6f3;color:#245c54;font-weight:650}
+.drive-report{max-height:220px;overflow:auto;font:11px/1.55 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;color:#9c521b}
+@media(max-width:599px){
+ dialog.drive-dialog{padding:14px}
+ .drive-dialog .dialog-head{top:-14px;padding:12px 0}
+ .drive-map-row{grid-template-columns:1fr;gap:6px}
+ .drive-toolbar .button{flex:1 1 145px;padding:11px 9px}
+ .drive-file-heading{align-items:start}
+ .drive-file-status{max-width:110px;white-space:normal;text-align:right}
+ .drive-file-preview{max-height:40vh}
+}
+@media(prefers-color-scheme:dark){
+ .drive-dialog .dialog-head{background:#17263b;border-color:#30465a}
+ .drive-dialog h3,.drive-dialog .drive-field{color:#dcebf3}
+ .drive-dialog .drive-setup,.drive-map-row,.drive-preview-row{background:#20334a;border-color:#3c5366}
+ .drive-setup summary,.drive-identity,.drive-preview-row a{color:#9ce3d5}
+ .drive-field input,.drive-map-row select,.drive-override select,.drive-title-row select{background:#172638;color:#e3f0f6;border-color:#415667}
+ .drive-map-row span small{color:#aac0d0}
+ .drive-area{border-color:#3e5166}
+ .drive-confirm{background:#1c433b;border-color:#396556}
+ .drive-file-status{background:#54432a;color:#f5d8a6}
+ .drive-file-status.ready{background:#1c4c3a;color:#b4e5c8}
+ .drive-file-status.already-uploaded{background:#334559;color:#c3d4e9}
+ .drive-live{background:#20443d;color:#b4e9dc}
+ .drive-report{color:#edc9aa}
+}
