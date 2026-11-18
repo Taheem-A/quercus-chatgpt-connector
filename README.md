@@ -14,7 +14,7 @@ Quercus Pocket remains at **https://quercus-pocket.vercel.app/**. It now support
 
 ### Sign up and synchronize your devices
 
-1. Open the production Quercus Pocket URL in Safari or desktop Chrome/Edge. Tap **Sign in → Create account**. Enter your email, a display name, and a unique password. Confirm the emailed **one-time verification code**, or use the enabled Google login provider.
+1. Open the production Quercus Pocket URL in Safari or desktop Chrome/Edge. Tap **Sign in → Create account**. Enter your email, a display name, and a unique password. Confirm the emailed **one-time verification code**.
 2. On your original device, open **Account → Upload this device's saved snapshot**. This is separate, explicit consent because your snapshot may include grades, academic records and Quercus page contents. If the original saved anonymous export disappeared after signing in, choose **Use existing device-only backup** to review it inside your account first.
 3. Sign into the **same account** on your other device. It will download and cache the newest private cloud snapshot. Your Quercus API token is not shared between devices; enter your token separately on a second device only if you want it to initiate Quercus syncing too.
 4. While signed in, the app checks for newer cloud data when focused or reopened and approximately every **two minutes** in the foreground. The cached workspace is readable offline. On offline launch, the previously used account can view its own local cached data until the online session is reverified.
@@ -24,7 +24,7 @@ The account database stores the **latest snapshot**, not continuously live Canva
 
 ### Privacy, database and conflict protection
 
-- Managed Neon Auth (Better Auth), email OTP verification, account passwords and optional Google sign-in. Quercus access tokens remain device-only and are not copied to the account database.
+- Managed Neon Auth (Better Auth), email OTP verification, account passwords and a first-party HTTPS auth proxy for Safari/iOS. Quercus access tokens remain device-only and are not copied to the account database.
 - A separate Neon project named **Quercus Pocket Cloud** has database **quercus_pocket**. The University Planner projects were not modified.
 - Each snapshot has an owner ID and a revision. **FORCE ROW LEVEL SECURITY** on the Postgres table protects all SELECT/INSERT/UPDATE/DELETE operations. Anonymous access grants were revoked; each authenticated query is restricted to the user identity verified by Neon. The schema is in `mobile/migrations/001_cloud_snapshots.sql`.
 - Cloud writes recheck the latest revision and use a conditional update, rejecting stale uploads if another device has already committed a newer copy. Newer cloud snapshots are downloaded only when the local copy has no unuploaded changes.
@@ -36,7 +36,7 @@ The account database stores the **latest snapshot**, not continuously live Canva
 
 The cross-platform web app lives in the `mobile/` directory, using Vite with the official `@neondatabase/neon-js` client. Run `npm install`, then `npm run build` from that directory. Vercel's configured root is still `mobile`; the build output is `dist`, with the existing read-only API relay preserved under `mobile/api/canvas.js`. New offline caching is implemented in `mobile/public/sw.js` and caches hashed static assets without caching API responses or tokens.
 
-**Current limitations:** No background service worker Canvas synchronization, automatic downloads of linked PDFs, multi-user sharing, Google Drive/AI integrations, or Windows EXE yet. Cloud preview domains are not authorized to perform real Neon sign-in; production email OTP and account syncing still require a live end-user verification. Retain a JSON export as a personal backup before changing devices.
+**Current limitations:** No background service worker Canvas synchronization, automatic downloads of linked PDFs, multi-user sharing, Google Drive/AI integrations, or Windows EXE yet. Google OAuth sign-in is deferred until its first-party callback flow is validated. Neon shared email delivery is intended for initial testing; a dedicated SMTP provider is recommended for sustained production use. Cloud preview domains are not authorized to perform real Neon sign-in; production email OTP and account syncing still require a live end-user verification. Retain a JSON export as a personal backup before changing devices.
 
 ---
 ## iPhone and Android companion — Quercus Pocket
