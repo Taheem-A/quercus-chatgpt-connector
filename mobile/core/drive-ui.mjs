@@ -203,6 +203,13 @@ export function setupDrive({getSnapshot,getCanvasToken,getUserId}){
         f.name==='Quercus Pocket Exports');
       if(out.length>1)throw Error('Several matching export folders exist. Review Drive before proceeding.');
       const folder=out[0]||await client.createFolder('Quercus Pocket Exports',config.rootId);
+      const prior=await client.listChildren(folder.id);
+      if(prior.some(item=>item.name===archive.name||
+        (item.appProperties?.quercusPocketExport==='full-without-attachments' &&
+         item.name===archive.name))){
+        update('That exact snapshot ZIP already exists in Drive. Nothing new was uploaded.');
+        return;
+      }
       update('Uploading '+archive.name+' …');
       const result=await client.uploadNew({
         folderId:folder.id,name:archive.name,mimeType:'application/zip',
