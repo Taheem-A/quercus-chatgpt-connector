@@ -311,3 +311,8 @@
  .reader-outline button.current,.reader-outline button:hover{background:#21423f;color:#bff0de}
  @media(min-width:980px){.bottom-nav{background:#142239;border-color:#304157}.bottom-nav button:hover{background:#20344b}.bottom-nav button.selected{background:#21423f;color:#c3f2df}}
 }
+
+/* Account recovery controls remain subtle and accessible. */
+.account-text-action{background:transparent;border:0;color:#19766c;text-decoration:underline;text-underline-offset:3px;font-size:12px;font-weight:700;padding:8px 0;cursor:pointer}
+#authGoogle[hidden]{display:none!important}
+.auth-verification[hidden]{display:none!important}
