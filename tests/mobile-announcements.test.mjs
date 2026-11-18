@@ -31,7 +31,7 @@ const snapshot={
       ],
       discussions:[
         {id:11,is_announcement:true,message:'Short'},
-        {id:12,is_announcement:true,title:'Tomorrow's review',created_at:'2026-11-16T10:00:00Z',
+        {id:12,is_announcement:true,title:"Tomorrow's review",created_at:'2026-11-16T10:00:00Z',
           message:'<p>Revision session</p>',read_state:'read'},
         {id:90,is_announcement:false,title:'Ordinary discussion',message:'Not an announcement'}
       ],
