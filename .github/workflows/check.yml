@@ -2,7 +2,7 @@ name: Quercus Local checks
 
 on:
   push:
-    branches: [main, feature/quercus-safe-file-sync, feature/drive-integration-v1]
+    branches: [main, feature/quercus-safe-file-sync]
   pull_request:
 
 permissions:
