@@ -45,7 +45,10 @@ test('account controls are accessible without replacing the original Quercus ope
   assert.match(html,/id="connectButton"/);
   assert.match(html,/id="exportButton"/);
   assert.match(html,/id="importButton"/);
-  assert.match(html,/https:\/\/ep-proud-poetry-bd2f21s9\.neonauth\./);
+  assert.match(html,/connect-src 'self'/);
+  assert.match(html,/apirest\.c-8/);
+  assert.doesNotMatch(html,/neonauth\.c-8/);
+  assert.match(html,/id="authGoogle"[^>]*hidden disabled/);
   const app=read('app.js');
   assert.match(app,/await cloud\.initialize\(\)/);
   assert.match(app,/await cloud\.localChanged\(next,\{fromQuercus:true\}\)/);
