@@ -3,6 +3,7 @@ import { BrowserCanvasClient } from './core/canvas.mjs';
 import { syncQuercus } from './core/sync.mjs';
 import { renderCanvasContent, contentLinks } from './core/rich-content.mjs';
 import { makeMobileExport, makeSavedMarkdownExport } from './core/mobile-export.mjs';
+import { makeSnapshotArchive, makeAttachmentArchive } from './core/attachment-export.mjs';
 import { pageRoute, courseRoute, parseReaderRoute, resolveSavedPageLink, savedPage } from './core/page-router.mjs';
 import { buildPageCatalog, buildPageReader } from './core/page-ui.mjs';
 import { describeFilePreview } from './core/attachment-preview.mjs';
@@ -353,8 +354,19 @@ async function importFile(file){
 
 let exportBlobUrl = null;
 async function exportSnapshot(format) {
+  const binaryMode = format === 'full-with-attachments' || format === 'attachments-only';
   const info = state.snapshot
-    ? makeMobileExport(state.snapshot, format)
+    ? format === 'full-without-attachments'
+      ? makeSnapshotArchive(state.snapshot)
+      : binaryMode
+        ? await makeAttachmentArchive(state.snapshot,{
+          mode:format,
+          client:state.token&&navigator.onLine?new BrowserCanvasClient(state.token):null,
+          onProgress:({current,total,status,name})=>{
+            $('exportMessage').textContent='Downloading '+current+'/'+total+' · '+status+' · '+name;
+          },
+        })
+        : makeMobileExport(state.snapshot, format)
     : format === 'chatgpt' ? makeSavedMarkdownExport(state.markdown) : null;
   if (!info) throw new Error('Only the saved Markdown can be exported in Markdown-only mode. Sync or import JSON for other formats.');
   if (exportBlobUrl) URL.revokeObjectURL(exportBlobUrl);
@@ -367,10 +379,17 @@ async function exportSnapshot(format) {
   anchor.className = 'button export-ready';
   anchor.textContent = 'Save ' + info.name;
   result.replaceChildren(anchor);
-  $('exportMessage').textContent = 'Generated on your phone: ' + Math.max(1, Math.round(blob.size/1024)) + ' KB. Save to Files or use Share.';
+  const manifest=info.manifest;
+  $('exportMessage').textContent=manifest
+    ? (manifest.mode==='full-without-attachments'
+      ? 'Full snapshot saved without binary attachments. Manifest lists '+manifest.attachmentCount+' referenced files.'
+      : manifest.downloaded+'/'+manifest.attachmentCount+' actual attachments bundled. '+
+        (manifest.failed?'Some downloads failed or exceeded limits; see manifest.json in the ZIP.':'All detected file downloads succeeded.')+
+        ' Save the ZIP to Files or Downloads.')
+    : 'Generated locally: '+Math.max(1,Math.round(blob.size/1024))+' KB. Save to Files or use Share.';
   if (navigator.share && navigator.canShare && typeof File !== 'undefined') {
     const file = new File([blob], info.name, {type:info.type});
-    if (navigator.canShare({files:[file]})) {
+    if (blob.size < 30*1024*1024 && navigator.canShare({files:[file]})) {
       try {
         await navigator.share({files:[file],title:'Quercus Pocket export'});
         $('exportMessage').textContent = 'Share completed. The Save button remains available below.';
@@ -588,11 +607,12 @@ $('connectNow').addEventListener('click', async () => {
 $('importButton').addEventListener('click',openImport);
 $('exportButton').addEventListener('click',openExport);
 document.querySelectorAll('[data-export]').forEach(button => button.addEventListener('click',async ()=>{
-  $('exportMessage').textContent = 'Preparing export on this phone…';
-  button.disabled = true;
+  $('exportMessage').textContent = 'Preparing export on this device…';
+  const buttons=[...document.querySelectorAll('[data-export]')];
+  buttons.forEach(x=>x.disabled=true);
   try {await exportSnapshot(button.dataset.export);}
   catch(error){$('exportMessage').textContent='Export failed: '+error.message;}
-  finally {button.disabled=false;}
+  finally {buttons.forEach(x=>x.disabled=!state.snapshot && x.dataset.export!=='chatgpt');}
 }));
 content.addEventListener('click',event=>{
   const target=event.target;

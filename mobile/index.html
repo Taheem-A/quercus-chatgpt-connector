@@ -124,13 +124,18 @@
     <form method="dialog" class="dialog-head"><strong>Export Quercus data</strong><button class="icon-button" aria-label="Close">✕</button></form>
     <p>Create an export from the latest data saved on this device. Exports are generated locally. On iPhone use Share to save to Files; on desktop use Download.</p>
     <div id="exportOptions" class="export-options">
+      <button type="button" class="button" data-export="full-with-attachments">Full export WITH downloaded attachments (.zip)</button>
+      <button type="button" class="button outline" data-export="full-without-attachments">Full export WITHOUT attachment bytes (.zip)</button>
+      <button type="button" class="button outline" data-export="attachments-only">Organized attachments ONLY (.zip)</button>
+      <p class="hint">Attachment downloads need a live Quercus API token on this device. Files are provisionally grouped by course and their original Canvas folders. Your custom filing rules will be added later. Missing or blocked downloads are reported in manifest.json.</p>
+      <div class="account-divider"></div>
       <button type="button" class="button" data-export="json">Complete JSON (.json)</button>
       <button type="button" class="button outline" data-export="chatgpt">ChatGPT Markdown (.md)</button>
       <button type="button" class="button outline" data-export="markdown">Readable Markdown (.md)</button>
       <button type="button" class="button outline" data-export="ics">Calendar (.ics)</button>
       <button type="button" class="button outline" data-export="zip">Complete bundle (.zip)</button>
     </div>
-    <p class="hint">The ZIP includes JSON, Markdown, CSV tables and ICS. Linked PDFs and attachments are not bundled automatically; download those from their page links.</p>
+    <p class="hint">The three new ZIP modes are independent of your AI gateway. Browser archives have conservative size limits. Quercus may block cross-origin binary downloads even when a file can be previewed; the manifest explicitly reports every missing attachment. The existing ZIP remains metadata-only.</p>
     <p id="exportMessage" role="status"></p>
     <div id="exportResult"></div>
   </dialog>
