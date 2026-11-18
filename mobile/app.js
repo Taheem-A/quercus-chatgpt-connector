@@ -8,10 +8,11 @@ import { buildPageCatalog, buildPageReader } from './core/page-ui.mjs';
 import { describeFilePreview } from './core/attachment-preview.mjs';
 import { assignmentInfo, assignmentRoute, assignmentCourseRoute, parseAssignmentRoute, resolveSavedAssignmentLink } from './core/assignment-data.mjs';
 import { buildAssignmentCatalog, buildAssignmentReader } from './core/assignment-ui.mjs';
+import { setupCloud } from './core/cloud-ui.mjs';
 
 const $ = id => document.getElementById(id);
 const content = $('content');
-const state = { snapshot:null, markdown:null, view:'home', query:'', course:'all', reader:null, assignmentCourse:'all', assignmentReader:null, assignmentFilter:'all', token:null, syncing:false };
+const state = { snapshot:null, markdown:null, view:'home', query:'', course:'all', reader:null, assignmentCourse:'all', assignmentReader:null, assignmentFilter:'all', token:null, syncing:false, cloudUser:null, cloudRecord:null, cloudEnabled:false, cloudPending:false, cloudBusy:false, cloudError:'', hasUsedCloudAccount:false, guestBackup:null };
 const DB_NAME = 'quercus-pocket-private';
 const DB_VERSION = 2;
 const MAX_FILE_BYTES = 40 * 1024 * 1024;
@@ -49,7 +50,7 @@ function openConnect(){
 }
 function setStatus() {
   const stamp = state.snapshot?.meta?.completedAt || state.snapshot?.meta?.startedAt;
-  $('syncStatus').textContent = stamp ? 'Last synced ' + readableDate(stamp) + ' · ' + (state.snapshot?.meta?.app === 'Quercus Pocket' ? 'Live phone sync' : 'Imported snapshot') + ' · Available offline' : state.markdown ? 'Saved Markdown export · Read-only and available offline' : 'Connect Quercus directly, or import a saved export.';
+  $('syncStatus').textContent = stamp ? 'Last synced ' + readableDate(stamp) + ' · ' + (state.snapshot?.meta?.app === 'Quercus Pocket' ? 'Direct Quercus sync' : 'Imported snapshot') + ' · Available offline' : state.markdown ? 'Saved Markdown export · Read-only and available offline' : 'Connect Quercus, restore your cloud copy, or import a saved export.';
 }
 function updateHeader(){
   setStatus();
@@ -63,7 +64,7 @@ function snapshotHome(){
   const due=assignments(snapshot).filter(a=>a.dueAt&&dateValue(a.dueAt)>=Date.now()&&!a.excused&&!a.submitted).sort((a,b)=>dateValue(a.dueAt)-dateValue(b.dueAt));
   const recent=announcements(snapshot).slice(0,4);
   return '<div class="stats"><div class="stat"><b>'+snapshot.courses.length+'</b><span>Courses</span></div><div class="stat"><b>'+due.filter(a=>dateValue(a.dueAt)<Date.now()+604800000).length+'</b><span>Due this week</span></div><div class="stat"><b>'+pages(snapshot).filter(p=>p.status==='retrieved').length+'</b><span>Pages synced</span></div></div>'+
-    '<div class="notice">Your latest synced snapshot stays on this phone for offline access. Tap ⟳ to get fresh Quercus information whenever you have internet.</div>'+
+    '<div class="notice">Your courses stay available offline on this device. Tap ⟳ for fresh Quercus data. With an account, you can also sync updates to your other devices.</div>'+
     section('Coming up',grouped(due.filter(a=>match(a.name,a.courseCode,a.descriptionText)),a=>card(a.name,readableDate(a.dueAt),'<button class="button outline" data-open-assignment-course="'+escapeHtml(a.courseId)+'" data-open-assignment-id="'+escapeHtml(a.id)+'">View assignment</button>', '',a.courseCode||a.courseName),5),due.length+' pending')+
     section('Latest announcements',grouped(recent.filter(a=>match(a.title,a.text,a.course)),a=>card(a.title,a.text.slice(0,260),link(a.url),'',a.course+' · '+readableDate(a.date)),4));
 }
@@ -117,7 +118,8 @@ function snapshotMore(){
   const matches=files(state.snapshot).filter(f=>match(f.title,f.course));
   return section('Announcements',grouped(notes,a=>card(a.title,a.text.slice(0,600),a.text.length>600?'<details><summary>Read full announcement</summary><div class="body-text">'+escapeHtml(a.text)+'</div></details>':'',link(a.url),a.course+' · '+readableDate(a.date)),25))+
     section('Course files',grouped(matches,f=>card(f.title,f.course, '',fileAction(f),f.bytes?Math.round(f.bytes/1024)+' KB':''),35),matches.length+' found')+
-    section('Sync and privacy','<div class="card"><p>You can sync Quercus directly on this phone with an access token. Your saved data stays offline-capable. Live requests pass through the restricted HTTPS relay; no Quercus token or course snapshot is stored on Vercel.</p><div class="footer-actions"><button class="button" id="syncAgain">Sync now</button><button class="button outline" id="changeToken">Change token</button><button class="button outline" id="forgetToken">Forget saved token</button><button class="button outline" id="openExportMore">Export my data</button><button class="button outline" id="refreshExport">Import saved export</button><button class="button outline" id="clearData">Delete saved data</button></div></div>');
+    section('Accounts and cloud','<div class="card"><p>Sign in to keep your courses, assignments, Pages and grades in sync between devices. Uploading existing device data is always a separate choice. Your Quercus access token stays device-local.</p><div class="footer-actions"><button class="button" id="openAccountMore">Account & cloud sync</button></div></div>')+
+    section('Sync and privacy','<div class="card"><p>Sync Quercus directly from this device with your university token. Course data is stored in Neon only if you explicitly opt in. The Quercus token stays on this device.</p><div class="footer-actions"><button class="button" id="syncAgain">Sync now</button><button class="button outline" id="changeToken">Change token</button><button class="button outline" id="forgetToken">Forget saved token</button><button class="button outline" id="openExportMore">Export my data</button><button class="button outline" id="refreshExport">Import saved export</button><button class="button outline" id="clearData">Delete saved data</button></div></div>');
 }
 function markdownHome(){
   const items=extractMarkdownSections(state.markdown);
@@ -127,6 +129,7 @@ function markdownHome(){
 }
 function render(){
   updateHeader();
+  cloud.status();
   $('main').classList.toggle('reader-mode', Boolean((state.reader && state.view==='pages') || (state.assignmentReader && state.view==='tasks')));
   if(!state.snapshot&&!state.markdown){
     content.innerHTML=empty('Connect directly to Quercus','Sync your course data from your phone with no laptop required.')+
@@ -147,6 +150,7 @@ function render(){
     state.assignmentFilter=b.dataset.assignmentFilter;render();
   }));
   $('refreshExport')?.addEventListener('click',openImport);
+  $('openAccountMore')?.addEventListener('click',cloud.openAccount);
   $('openExportMore')?.addEventListener('click',openExport);
   $('syncAgain')?.addEventListener('click',()=>state.token?startLiveSync():openConnect());
   $('changeToken')?.addEventListener('click',openConnect);
