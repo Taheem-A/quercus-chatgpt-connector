@@ -63,7 +63,7 @@ const buildManifest=(snapshot,mode,inventory)=>({
   notes:[
     'This archive includes only records available to the syncing Quercus account; unavailable or failed API endpoints remain in snapshot diagnostics.',
     'Binary file downloads depend on Quercus permissions and browser CORS. Every skipped attachment is listed below.',
-    'Archive folder destinations are provisional Canvas course/folder groupings, not a user's configured Google Drive filing rules.',
+    "Archive folder destinations are provisional Canvas course/folder groupings, not a user's configured Google Drive filing rules.",
   ],
   attachmentCount:inventory.length,
   files:[],
