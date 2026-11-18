@@ -33,6 +33,7 @@ test('privacy-preserving offline service worker caches app assets but not course
   const sw=read('public/sw.js');
   assert.match(sw,/event\.request\.method !== 'GET'/);
   assert.match(sw,/url\.pathname\.startsWith\('\/api\/'\)/);
+  assert.match(sw,/url\.pathname\.startsWith\('\/auth\/'\)/);
   assert.match(sw,/url\.pathname\.startsWith\('\/assets\/'\)/);
   assert.doesNotMatch(sw,/Bearer\\s+|['\"]Authorization['\"]/);
 });
