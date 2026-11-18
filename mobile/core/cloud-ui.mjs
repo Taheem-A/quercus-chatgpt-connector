@@ -399,10 +399,6 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
     }catch(error){msg(error?.message||'Password reset failed.');}
     finally{state.cloudBusy=false;$('authCompleteReset').disabled=false;}
   });
-  $('authGoogle').addEventListener('click',async()=>{
-    try{msg('Redirecting to Google…');await cloudAuth.signInGoogle();}
-    catch(error){msg(error?.message||'Google sign-in unavailable.');}
-  });
   $('authSignOut').addEventListener('click',signOut);
   $('cloudCheckNow').addEventListener('click',()=>pull());
   $('cloudUploadNow').addEventListener('click',()=>upload(false));
