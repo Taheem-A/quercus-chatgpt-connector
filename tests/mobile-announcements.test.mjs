@@ -119,10 +119,10 @@ test('announcements catalogue has course entry points, timeline, full-text searc
   assert.match(home,/&lt;News&gt; Read this/);
   const search=buildAnnouncementCatalog(snapshot,'101','More details','all');
   assert.match(search,/&lt;News&gt; Read this/);
-  assert.doesNotMatch(search,/Tomorrow.s review/);
+  assert.doesNotMatch(search,/Tomorrow&#39;s review/);
   const recent=buildAnnouncementCatalog(snapshot,'101','','recent',Date.parse('2026-11-18T00:00:00Z'));
   assert.match(recent,/November 2026/);
-  assert.match(recent,/Tomorrow.s review/);
+  assert.match(recent,/Tomorrow&#39;s review/);
   const empty=buildAnnouncementCatalog(snapshot,'103');
   assert.match(empty,/CIV100/);
   assert.match(empty,/No announcements match/);
