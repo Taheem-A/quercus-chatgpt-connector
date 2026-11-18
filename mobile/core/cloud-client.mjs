@@ -29,6 +29,9 @@ export const cloudAuth={
   async signUp(email,password,name){
     return check(await neon.auth.signUp.email({email,password,name}),'Create account');
   },
+  async verifyEmail(email,otp){
+    return check(await neon.auth.emailOtp.verifyEmail({email,otp}),'Verify email');
+  },
   async signInGoogle(){
     return check(await neon.auth.signIn.social({provider:'google',callbackURL:location.origin+'/'}),'Google sign in');
   },
