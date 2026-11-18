@@ -1,4 +1,4 @@
-import { validateSnapshot, assignments, pages, announcements, files, extractMarkdownSections, courseName, dateValue } from './data.mjs';
+import { validateSnapshot, assignments, pages, files, extractMarkdownSections, courseName, dateValue } from './data.mjs';
 import { BrowserCanvasClient } from './core/canvas.mjs';
 import { syncQuercus } from './core/sync.mjs';
 import { renderCanvasContent, contentLinks } from './core/rich-content.mjs';
@@ -9,10 +9,13 @@ import { describeFilePreview } from './core/attachment-preview.mjs';
 import { assignmentInfo, assignmentRoute, assignmentCourseRoute, parseAssignmentRoute, resolveSavedAssignmentLink } from './core/assignment-data.mjs';
 import { buildAssignmentCatalog, buildAssignmentReader } from './core/assignment-ui.mjs';
 import { setupCloud } from './core/cloud-ui.mjs';
+import { allAnnouncements, announcementInfo, announcementRoute, announcementCourseRoute,
+  parseAnnouncementRoute, resolveSavedAnnouncementLink } from './core/announcement-data.mjs';
+import { buildAnnouncementCatalog, buildAnnouncementReader } from './core/announcement-ui.mjs';
 
 const $ = id => document.getElementById(id);
 const content = $('content');
-const state = { snapshot:null, markdown:null, view:'home', query:'', course:'all', reader:null, assignmentCourse:'all', assignmentReader:null, assignmentFilter:'all', token:null, syncing:false, cloudUser:null, cloudRecord:null, cloudEnabled:false, cloudPending:false, cloudBusy:false, cloudError:'', hasUsedCloudAccount:false, guestBackup:null };
+const state = { snapshot:null, markdown:null, view:'home', query:'', course:'all', reader:null, assignmentCourse:'all', assignmentReader:null, assignmentFilter:'all', announcementCourse:'all', announcementReader:null, announcementFilter:'all', token:null, syncing:false, cloudUser:null, cloudRecord:null, cloudEnabled:false, cloudPending:false, cloudBusy:false, cloudError:'', hasUsedCloudAccount:false, guestBackup:null };
 const DB_NAME = 'quercus-pocket-private';
 const DB_VERSION = 2;
 const MAX_FILE_BYTES = 40 * 1024 * 1024;
@@ -62,11 +65,16 @@ function updateHeader(){
 function snapshotHome(){
   const snapshot=state.snapshot;
   const due=assignments(snapshot).filter(a=>a.dueAt&&dateValue(a.dueAt)>=Date.now()&&!a.excused&&!a.submitted).sort((a,b)=>dateValue(a.dueAt)-dateValue(b.dueAt));
-  const recent=announcements(snapshot).slice(0,4);
+  const recent=allAnnouncements(snapshot).slice(0,4);
   return '<div class="stats"><div class="stat"><b>'+snapshot.courses.length+'</b><span>Courses</span></div><div class="stat"><b>'+due.filter(a=>dateValue(a.dueAt)<Date.now()+604800000).length+'</b><span>Due this week</span></div><div class="stat"><b>'+pages(snapshot).filter(p=>p.status==='retrieved').length+'</b><span>Pages synced</span></div></div>'+
     '<div class="notice">Your courses stay available offline on this device. Tap ⟳ for fresh Quercus data. With an account, you can also sync updates to your other devices.</div>'+
     section('Coming up',grouped(due.filter(a=>match(a.name,a.courseCode,a.descriptionText)),a=>card(a.name,readableDate(a.dueAt),'<button class="button outline" data-open-assignment-course="'+escapeHtml(a.courseId)+'" data-open-assignment-id="'+escapeHtml(a.id)+'">View assignment</button>', '',a.courseCode||a.courseName),5),due.length+' pending')+
-    section('Latest announcements',grouped(recent.filter(a=>match(a.title,a.text,a.course)),a=>card(a.title,a.text.slice(0,260),link(a.url),'',a.course+' · '+readableDate(a.date)),4));
+    section('Latest announcements','<div class="announcement-home-actions"><button type="button" class="button outline" data-show-announcements>Browse announcements</button></div>'+
+      grouped(recent.filter(a=>match(a.title,a.html,a.course)),a=>card(a.title,
+        a.author?'By '+a.author+' · '+readableDate(a.postedAt):readableDate(a.postedAt),
+        '<button class="button outline" type="button" data-open-announcement-course="'+
+        escapeHtml(a.courseId)+'" data-open-announcement-id="'+escapeHtml(a.id)+'">Read announcement</button>',
+        '',a.course),4));
 }
 function snapshotTasks(){
   return state.assignmentReader
@@ -79,7 +87,7 @@ function snapshotCourses(){
     const cd=state.snapshot.courseData?.[c.id]||{};
     const grade=(state.snapshot.derived?.grades||[]).find(g=>String(g.courseId)===String(c.id));
     const grades=grade?.currentGrade||grade?.currentScore;
-    return card(courseName(c),c.name||'Course','<span class="pill">'+(cd.modules||[]).length+' modules</span> <span class="pill muted">'+(cd.pages||[]).length+' pages</span>'+(grades!==undefined?' <span class="pill">Grade '+escapeHtml(grades)+'</span>':''),'<div class="assignment-course-actions"><button class="button outline" data-course="'+escapeHtml(c.id)+'">View pages</button><button class="button outline" data-go-assignment-course="'+escapeHtml(c.id)+'">View assignments</button></div>',c.term?.name||'');
+    return card(courseName(c),c.name||'Course','<span class="pill">'+(cd.modules||[]).length+' modules</span> <span class="pill muted">'+(cd.pages||[]).length+' pages</span>'+(grades!==undefined?' <span class="pill">Grade '+escapeHtml(grades)+'</span>':''),'<div class="assignment-course-actions"><button class="button outline" data-course="'+escapeHtml(c.id)+'">View pages</button><button class="button outline" data-go-assignment-course="'+escapeHtml(c.id)+'">View assignments</button><button class="button outline" data-go-announcement-course="'+escapeHtml(c.id)+'">View announcements</button></div>',c.term?.name||'');
   }));
 }
 // Safe Canvas HTML renderer: preserves links without trusting raw course markup.
@@ -113,10 +121,14 @@ function snapshotPages(){
     ? buildPageReader(state.snapshot, state.reader.courseId, state.reader.slug)
     : buildPageCatalog(state.snapshot, state.course, state.query);
 }
+function snapshotAnnouncements(){
+  return state.announcementReader
+    ? buildAnnouncementReader(state.snapshot,state.announcementReader.courseId,state.announcementReader.id)
+    : buildAnnouncementCatalog(state.snapshot,state.announcementCourse,state.query,state.announcementFilter);
+}
 function snapshotMore(){
-  const notes=announcements(state.snapshot).filter(a=>match(a.title,a.text,a.course));
   const matches=files(state.snapshot).filter(f=>match(f.title,f.course));
-  return section('Announcements',grouped(notes,a=>card(a.title,a.text.slice(0,600),a.text.length>600?'<details><summary>Read full announcement</summary><div class="body-text">'+escapeHtml(a.text)+'</div></details>':'',link(a.url),a.course+' · '+readableDate(a.date)),25))+
+  return section('Announcements','<div class="card"><h3>Course announcements</h3><p>Browse updates by course, date, or full message.</p><div class="footer-actions"><button type="button" class="button outline" data-show-announcements>Open announcement centre</button></div></div>')+
     section('Course files',grouped(matches,f=>card(f.title,f.course, '',fileAction(f),f.bytes?Math.round(f.bytes/1024)+' KB':''),35),matches.length+' found')+
     section('Accounts and cloud','<div class="card"><p>Sign in to keep your courses, assignments, Pages and grades in sync between devices. Uploading existing device data is always a separate choice. Your Quercus access token stays device-local.</p><div class="footer-actions"><button class="button" id="openAccountMore">Account & cloud sync</button></div></div>')+
     section('Sync and privacy','<div class="card"><p>Sync Quercus directly from this device with your university token. Course data is stored in Neon only if you explicitly opt in. The Quercus token stays on this device.</p><div class="footer-actions"><button class="button" id="syncAgain">Sync now</button><button class="button outline" id="changeToken">Change token</button><button class="button outline" id="forgetToken">Forget saved token</button><button class="button outline" id="openExportMore">Export my data</button><button class="button outline" id="refreshExport">Import saved export</button><button class="button outline" id="clearData">Delete saved data</button></div></div>');
@@ -130,7 +142,7 @@ function markdownHome(){
 function render(){
   updateHeader();
   cloud.status();
-  $('main').classList.toggle('reader-mode', Boolean((state.reader && state.view==='pages') || (state.assignmentReader && state.view==='tasks')));
+  $('main').classList.toggle('reader-mode', Boolean((state.reader && state.view==='pages') || (state.assignmentReader && state.view==='tasks') || (state.announcementReader && state.view==='announcements')));
   if(!state.snapshot&&!state.markdown){
     content.innerHTML=empty('Connect directly to Quercus','Sync your course data from your phone with no laptop required.')+
       '<div class="cta"><button class="button" id="firstConnect">Connect and sync Quercus</button><button class="button outline" id="firstImport">Import a saved export</button></div>'+
@@ -139,7 +151,7 @@ function render(){
     $('firstConnect').addEventListener('click',()=>state.token?startLiveSync():openConnect());return;
   }
   if(state.markdown&&!state.snapshot){content.innerHTML=markdownHome();return;}
-  content.innerHTML=({home:snapshotHome,tasks:snapshotTasks,courses:snapshotCourses,pages:snapshotPages,more:snapshotMore}[state.view]||snapshotHome)();
+  content.innerHTML=({home:snapshotHome,tasks:snapshotTasks,courses:snapshotCourses,pages:snapshotPages,announcements:snapshotAnnouncements,more:snapshotMore}[state.view]||snapshotHome)();
   // Images whose Canvas content provides only a file API reference have no
   // initial browser URL: resolve their signed URLs on demand.
   content.querySelectorAll('img[data-canvas-image-pending]').forEach(image =>
@@ -149,13 +161,16 @@ function render(){
   document.querySelectorAll('[data-assignment-filter]').forEach(b=>b.addEventListener('click',()=>{
     state.assignmentFilter=b.dataset.assignmentFilter;render();
   }));
+  document.querySelectorAll('[data-announcement-filter]').forEach(b=>b.addEventListener('click',()=>{
+    state.announcementFilter=b.dataset.announcementFilter;render();
+  }));
   $('refreshExport')?.addEventListener('click',openImport);
   $('openAccountMore')?.addEventListener('click',cloud.openAccount);
   $('openExportMore')?.addEventListener('click',openExport);
   $('syncAgain')?.addEventListener('click',()=>state.token?startLiveSync():openConnect());
   $('changeToken')?.addEventListener('click',openConnect);
   $('forgetToken')?.addEventListener('click',async()=>{await dbForgetToken();state.token=null;alert('Saved access token cleared from this device.');});
-  $('clearData')?.addEventListener('click',async()=>{if(!confirm('Delete all imported Quercus data AND your saved access token from this phone?'))return;await dbClear();state.token=null;state.snapshot=null;state.markdown=null;state.reader=null;state.assignmentReader=null;state.assignmentCourse='all';state.course='all';state.view='home';if(!state.cloudUser)state.guestBackup=null;render()});
+  $('clearData')?.addEventListener('click',async()=>{if(!confirm('Delete all imported Quercus data AND your saved access token from this phone?'))return;await dbClear();state.token=null;state.snapshot=null;state.markdown=null;state.reader=null;state.assignmentReader=null;state.assignmentCourse='all';state.announcementReader=null;state.announcementCourse='all';state.course='all';state.view='home';if(!state.cloudUser)state.guestBackup=null;render()});
 }
 function navigateCourse(courseId) {
   if (!state.snapshot) return;
@@ -205,7 +220,46 @@ function navigateAssignmentLibrary(){
   state.query='';$('search').value='';
   render();window.scrollTo(0,0);
 }
+function navigateAnnouncementCourse(courseId){
+  if(!state.snapshot || !(state.snapshot.courses||[]).some(c=>String(c.id)===String(courseId)))return;
+  history.pushState({pocket:true},'',announcementCourseRoute(courseId));
+  state.announcementCourse=String(courseId);
+  state.announcementReader=null;state.reader=null;state.assignmentReader=null;
+  state.view='announcements';state.query='';$('search').value='';
+  render();window.scrollTo(0,0);
+}
+function navigateAnnouncement(courseId,id){
+  if(!announcementInfo(state.snapshot,courseId,id))return;
+  history.pushState({pocket:true},'',announcementRoute(courseId,id));
+  state.announcementCourse=String(courseId);
+  state.announcementReader={courseId:String(courseId),id:String(id)};
+  state.reader=null;state.assignmentReader=null;
+  state.view='announcements';state.query='';$('search').value='';
+  render();window.scrollTo(0,0);
+}
+function navigateAnnouncementLibrary(){
+  history.pushState({pocket:true},'','#/announcements');
+  state.announcementReader=null;state.announcementCourse='all';state.announcementFilter='all';
+  state.reader=null;state.assignmentReader=null;
+  state.view='announcements';state.query='';$('search').value='';
+  render();window.scrollTo(0,0);
+}
 function restoreReaderRoute() {
+  const announcementRouteInfo=parseAnnouncementRoute(location.hash);
+  if(state.snapshot && announcementRouteInfo){
+    state.announcementCourse=announcementRouteInfo.courseId;
+    state.announcementReader=announcementRouteInfo.id &&
+      announcementInfo(state.snapshot,announcementRouteInfo.courseId,announcementRouteInfo.id)
+      ?announcementRouteInfo:null;
+    state.reader=null;state.assignmentReader=null;state.view='announcements';
+    render();return;
+  }
+  if(state.snapshot && location.hash==='#/announcements'){
+    state.announcementReader=null;state.announcementCourse='all';
+    state.reader=null;state.assignmentReader=null;state.view='announcements';
+    render();return;
+  }
+  state.announcementReader=null;
   const assignmentRouteInfo=parseAssignmentRoute(location.hash);
   if (state.snapshot && assignmentRouteInfo) {
     if(!(state.snapshot.courses||[]).some(c=>String(c.id)===assignmentRouteInfo.courseId))return;
@@ -267,8 +321,8 @@ async function dbSaveToken(token){return dbWriteAuth(cloud.tokenStorageKey(),tok
 async function dbForgetToken(){return dbRemoveAuth(cloud.tokenStorageKey());}
 function switchSnapshot(next){
   state.snapshot=next||null;state.markdown=null;
-  state.reader=null;state.assignmentReader=null;
-  state.course='all';state.assignmentCourse='all';
+  state.reader=null;state.assignmentReader=null;state.announcementReader=null;
+  state.course='all';state.assignmentCourse='all';state.announcementCourse='all';
   state.view='home';state.query='';$('search').value='';
   if(location.hash.startsWith('#/'))history.replaceState({},'',location.pathname+location.search);
   render();
@@ -293,7 +347,7 @@ async function importFile(file){
     await dbWrite({kind:'markdown',value:text});
     state.markdown=text;state.snapshot=null;
   } else throw new Error('Choose the Complete JSON (.json) or ChatGPT Markdown (.md) Quercus export.');
-  state.reader=null;state.assignmentReader=null;state.assignmentCourse='all';state.assignmentFilter='all';state.view='home';state.course='all';state.query='';$('search').value='';
+  state.reader=null;state.assignmentReader=null;state.assignmentCourse='all';state.assignmentFilter='all';state.announcementReader=null;state.announcementCourse='all';state.announcementFilter='all';state.view='home';state.course='all';state.query='';$('search').value='';
   $('importDialog').close();render();
 }
 
@@ -489,8 +543,8 @@ async function startLiveSync() {
     state.markdown = null;
     state.view = 'home';
     state.reader = null;
-    state.assignmentReader=null;state.assignmentCourse='all';state.assignmentFilter='all';
-    if(location.hash.startsWith('#/assignments')||location.hash.startsWith('#/course/'))history.replaceState({},'',location.pathname+location.search);
+    state.assignmentReader=null;state.assignmentCourse='all';state.assignmentFilter='all';state.announcementReader=null;state.announcementCourse='all';state.announcementFilter='all';
+    if(location.hash.startsWith('#/announcements')||location.hash.startsWith('#/assignments')||location.hash.startsWith('#/course/'))history.replaceState({},'',location.pathname+location.search);
     state.course = 'all';
     state.query = '';
     $('search').value = '';
@@ -543,6 +597,25 @@ document.querySelectorAll('[data-export]').forEach(button => button.addEventList
 content.addEventListener('click',event=>{
   const target=event.target;
   if (!(target instanceof Element)) return;
+  const announcementButton=target.closest('[data-open-announcement-course][data-open-announcement-id]');
+  if(announcementButton&&content.contains(announcementButton)){
+    event.preventDefault();navigateAnnouncement(announcementButton.dataset.openAnnouncementCourse,announcementButton.dataset.openAnnouncementId);return;
+  }
+  const announcementCourseButton=target.closest('[data-go-announcement-course]');
+  if(announcementCourseButton&&content.contains(announcementCourseButton)){
+    event.preventDefault();navigateAnnouncementCourse(announcementCourseButton.dataset.goAnnouncementCourse);return;
+  }
+  const backAnnouncementButton=target.closest('[data-back-announcements]');
+  if(backAnnouncementButton&&content.contains(backAnnouncementButton)){
+    event.preventDefault();
+    if(state.announcementReader)navigateAnnouncementCourse(state.announcementReader.courseId);
+    else navigateAnnouncementLibrary();
+    return;
+  }
+  const showAnnouncements=target.closest('[data-show-announcements]');
+  if(showAnnouncements&&content.contains(showAnnouncements)){
+    event.preventDefault();navigateAnnouncementLibrary();return;
+  }
   const assignButton=target.closest('[data-open-assignment-course][data-open-assignment-id]');
   if(assignButton&&content.contains(assignButton)){
     event.preventDefault();navigateAssignment(assignButton.dataset.openAssignmentCourse,assignButton.dataset.openAssignmentId);return;
@@ -574,10 +647,12 @@ content.addEventListener('click',event=>{
   }
   const link=target.closest('a[href]');
   if(link && !link.hasAttribute('data-canvas-file') && !link.hasAttribute('data-pocket-external') && content.contains(link) && state.snapshot){
+    const announcement=resolveSavedAnnouncementLink(state.snapshot,link.getAttribute('href'),link.dataset.canvasApiEndpoint || '');
+    if(announcement){event.preventDefault();navigateAnnouncement(announcement.courseId,announcement.id);return;}
     const assignment=resolveSavedAssignmentLink(state.snapshot,link.getAttribute('href'),link.dataset.canvasApiEndpoint || '');
     if(assignment){event.preventDefault();navigateAssignment(assignment.courseId,assignment.id);return;}
     const resolved=resolveSavedPageLink(state.snapshot,link.getAttribute('href'),
-      state.reader?.courseId || state.assignmentReader?.courseId || state.course,link.dataset.canvasApiEndpoint || '');
+      state.reader?.courseId || state.assignmentReader?.courseId || state.announcementReader?.courseId || state.course,link.dataset.canvasApiEndpoint || '');
     if(resolved){
       event.preventDefault();navigatePage(resolved.courseId,resolved.slug);return;
     }
@@ -589,8 +664,9 @@ $('fileInput').addEventListener('change',async event=>{try{await importFile(even
 $('search').addEventListener('input',e=>{state.query=e.target.value.toLowerCase().trim();render()});
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{
   if(location.hash.startsWith('#/'))history.pushState({pocket:true},'',location.pathname+location.search);
-  state.reader=null;state.assignmentReader=null;
+  state.reader=null;state.assignmentReader=null;state.announcementReader=null;
   if(b.dataset.view==='tasks')state.assignmentCourse='all';
+  if(b.dataset.view==='announcements')state.announcementCourse='all';
   state.view=b.dataset.view;render();scrollTo(0,0);
 }));
 window.addEventListener('popstate',restoreReaderRoute);
