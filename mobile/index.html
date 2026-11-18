@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Quercus Pocket">
   <meta name="description" content="Your cross-platform university workspace — courses, assignments and Pages, with optional private cloud sync">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; frame-src https: blob:; connect-src 'self' https://ep-proud-poetry-bd2f21s9.neonauth.c-8.us-east-2.aws.neon.tech https://ep-proud-poetry-bd2f21s9.apirest.c-8.us-east-2.aws.neon.tech https://ep-proud-poetry-bd2f21s9.c-8.us-east-2.aws.neon.tech; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; frame-src https: blob:; connect-src 'self' https://ep-proud-poetry-bd2f21s9.apirest.c-8.us-east-2.aws.neon.tech; object-src 'none'; base-uri 'none'; form-action 'none'">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
@@ -70,7 +70,7 @@
       <label class="account-field">Email<input id="authEmail" inputmode="email" type="email" autocomplete="email" placeholder="you@example.com"></label>
       <label class="account-field">Password<input id="authPassword" type="password" autocomplete="current-password" placeholder="Your password"></label>
       <button id="authSubmit" type="button" class="button account-primary">Sign in</button>
-      <button id="authGoogle" type="button" class="button outline account-primary">Continue with Google</button>
+      <button id="authGoogle" type="button" hidden disabled aria-hidden="true">Google sign-in is not enabled</button>
       <button id="authForgotPassword" type="button" class="account-text-action">Forgot password?</button>
       <div id="authPasswordRecovery" class="auth-verification" hidden>
         <p>Reset your account password with an email verification code.</p>
