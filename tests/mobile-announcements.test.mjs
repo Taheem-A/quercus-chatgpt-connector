@@ -61,7 +61,7 @@ test('deduplicates global, per-course and flagged discussion announcements witho
   assert.equal(announcementInfo(snapshot,101,999),null);
 });
 
-test('uses Quercus's explicit read status only, not reply counts or inferred views',()=>{
+test("uses Quercus's explicit read status only, not reply counts or inferred views",()=>{
   const unread=announcementInfo(snapshot,101,11);
   const read=announcementInfo(snapshot,101,12);
   const unknown=announcementInfo(snapshot,102,21);
