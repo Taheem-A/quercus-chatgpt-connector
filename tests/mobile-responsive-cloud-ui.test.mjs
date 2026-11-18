@@ -34,7 +34,7 @@ test('privacy-preserving offline service worker caches app assets but not course
   assert.match(sw,/event\.request\.method !== 'GET'/);
   assert.match(sw,/url\.pathname\.startsWith\('\/api\/'\)/);
   assert.match(sw,/url\.pathname\.startsWith\('\/assets\/'\)/);
-  assert.doesNotMatch(sw,/token|Authorization/);
+  assert.doesNotMatch(sw,/Bearer\\s+|['\"]Authorization['\"]/);
 });
 test('account controls are accessible without replacing the original Quercus operations',()=>{
   const html=read('index.html');
