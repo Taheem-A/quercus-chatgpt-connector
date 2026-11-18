@@ -30,6 +30,6 @@ test('auth uses a first-party proxy with no embedded cookie secret',()=>{
   assert.match(proxy,/sameSite:'lax'/);
   assert.match(proxy,/64\*1024/);
   assert.match(proxy,/['"]Cache-Control['"]:/);
-  assert.doesNotMatch(client,/pNJzHOyUkhbx/);
-  assert.doesNotMatch(proxy,/pNJzHOyUkhbx/);
+  assert.doesNotMatch(proxy,/cookieSecret:\s*['\"](.{32,})['\"]/);
+  assert.doesNotMatch(client,/NEON_AUTH_COOKIE_SECRET/);
 });
