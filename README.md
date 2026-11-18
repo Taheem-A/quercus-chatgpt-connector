@@ -6,6 +6,36 @@ It is designed for one job: **run it when you need it, click Sync Quercus, colle
 
 There is no cloud database, no Vercel requirement, no Docker, and no npm dependency install. The server uses Node.js built-ins and runs on `127.0.0.1` only.
 
+## Complete Quercus archives — three selectable modes
+
+Quercus Pocket's **Export** dialog now offers three distinct, read-only archive formats, while preserving its original JSON, ChatGPT Markdown, readable Markdown, calendar ICS and legacy metadata ZIP options.
+
+1. **Full export WITH attachments** (`full-with-attachments`): the complete saved Canvas/Quercus snapshot (`snapshot.json`) including all accessible HTML Pages, assignments, submissions, grade information, announcements, course/Module metadata, discussions, calendar items, diagnostics, plus readable Markdown/CSV/ICS. It also **attempts to download actual file bytes**, and stores successfully downloaded resources under `attachments/<course>/<original Canvas folder>/<safe name> [Canvas-ID].ext`.
+2. **Full export WITHOUT attachments** (`full-without-attachments`): the same complete snapshot and supporting files, without the binary attachments. A `manifest.json` lists the detected file IDs, sources and intended paths, clearly marked `not-requested`.
+3. **Organized attachments ONLY** (`attachments-only`): actual accessible attachment binaries with a detailed `manifest.json`, without the complete saved snapshot. The **initial folder hierarchy is intentionally provisional**: by course and known original Canvas folder. User-defined Google Drive mappings and advanced AI-assisted filing rules are a separate, future integration, not applied silently.
+
+The export manifest includes source ID, original course ID, location, expected size, successful download length, SHA-256 where available, and a status for every detected file. Failed downloads are **never silently counted as included**. A `failed` entry contains a safe error category, never the signed URL or access token. A `isComplete` flag is true only when no file download failed and the original Quercus snapshot had no endpoint diagnostics indicating an inaccessible source. A snapshot can never contain information Quercus didn't permit the account to read.
+
+**Important browser limitation:** the HTML/CSS/JS Pocket app can obtain file metadata through its existing constrained HTTPS relay, but cannot always `fetch` the actual bytes of a signed Canvas/S3 URL due to browser CORS. A preview or an ordinary download link can work even when script-level binary fetch is blocked. The app doesn't add an insecure generic Vercel file proxy or transfer binary bytes into Neon. Such failures are reported in the manifest; saving a ZIP is **not** proof all attachment bytes were included.
+
+The mobile ZIP uses the existing STORE writer, limited to **180 MiB total** in-browser by the new full-binary modes and **32 MiB per file**. These conservative limits avoid some, but not all, iPhone memory risks. Truly large archives should be handled on a laptop. Failed and oversized files remain listed in the manifest. `manifest.json` also explains the provisional sorting and any inaccessible Quercus endpoints.
+
+### Reliable local-laptop fallback
+
+The repository already has an authenticated local Canvas downloader. Use the new CLI for archive generation *without browser CORS*, requiring a locally configured Quercus token (never a paid model API):
+
+```powershell
+node scripts/export-archives.mjs --mode full-with-attachments --out "C:\Users\leshu\Downloads\quercus-full.zip"
+node scripts/export-archives.mjs --mode full-without-attachments --out "C:\Users\leshu\Downloads\quercus-no-files.zip"
+node scripts/export-archives.mjs --mode attachments-only --out "C:\Users\leshu\Downloads\quercus-files.zip"
+```
+
+The CLI reads `data/snapshot.json` by default; use `--snapshot "C:\path\snapshot.json"` for a different previously exported complete snapshot. Only an explicit, new `--out` ZIP is written; **an existing archive is never overwritten**. The CLI currently shares the in-memory ZIP writer's limits and has a configurable `--max-mb` (1–240 MiB); it isn't yet a streaming/multi-volume archive service. A partial export exits with status 2 after writing a ZIP and manifest. Run the local Quercus sync first if you require newer course information.
+
+**AI integration:** the pre-existing separate `Taheem-A/local-ai-gateway` can later provide classification and retrieval through a secure, paired localhost companion; it isn't required for archive creation. If unavailable, exporting and deterministic folder grouping continue working. The existing gateway remains untouched.
+
+---
+
 ## Quercus Pocket v2 — cross-platform workspace and private cloud accounts
 
 Quercus Pocket remains at **https://quercus-pocket.vercel.app/**. It now supports iPhone portrait, iPhone landscape, tablet and desktop browsers. Desktop has a persistent sidebar; landscape and tablet readers have side-by-side course/assignment outlines and reading panes. The separate Quercus Local localhost-only desktop server at the repository root is unchanged.
