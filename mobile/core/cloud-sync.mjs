@@ -16,15 +16,21 @@ export function sanitizeForCloud(snapshot) {
   const allowed = ['meta','courses','courseData','global','derived','diagnostics'];
   const clean = {};
   for (const name of allowed) if (snapshot[name] !== undefined) clean[name] = snapshot[name];
-  const seen = new WeakSet();
-  const encoded = JSON.stringify(clean, (key,value) => {
-    if (SECRET_FIELD.test(key)) return undefined;
-    if (typeof value === 'object' && value !== null) {
-      if (seen.has(value)) throw new Error('Snapshot contains repeated or circular objects.');
-      seen.add(value);
+  // Quercus sync legitimately reuses objects across multiple fields, e.g.
+  // the same assignment in courseData and derived indexes. A global WeakSet
+  // incorrectly treats these shared references as cycles. Native
+  // JSON.stringify detects actual ancestor cycles while serializing shared
+  // references independently, just as exported Complete JSON already does.
+  let encoded;
+  try {
+    encoded = JSON.stringify(clean, (key, value) =>
+      SECRET_FIELD.test(key) ? undefined : value);
+  } catch (error) {
+    if (error instanceof TypeError && /circular|cyclic/i.test(error.message)) {
+      throw new Error('Snapshot contains a circular reference and cannot be uploaded. Your local data is unchanged.');
     }
-    return value;
-  });
+    throw error;
+  }
   if (!encoded || new TextEncoder().encode(encoded).length > MAX_CLOUD_BYTES) {
     throw new Error('Snapshot is too large for this first cloud-sync version. Your local data is unchanged; export JSON as a backup.');
   }

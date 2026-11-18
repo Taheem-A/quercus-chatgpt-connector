@@ -53,6 +53,45 @@ test('credentials and secret-like fields cannot be put into cloud snapshots',()=
   assert.equal(safe.global.nested.legit,'allowed');
   assert.equal(safe.apiToken,undefined);
 });
+test('shared references across course sections are valid JSON, not circular objects',()=>{
+  const snapshot=sample();
+  const commonAssignment={id:7,name:'Team Charter',submission:{workflow_state:'submitted'}};
+  const sharedPage={url:'rubric',body:'<p>Assignment instructions</p>'};
+  snapshot.courseData[42].assignments=[commonAssignment,commonAssignment];
+  snapshot.courseData[42].pageDetails.rubric=sharedPage;
+  snapshot.derived.assignments=[commonAssignment];
+  snapshot.global.latestPage=sharedPage;
+  const saved=sanitizeForCloud(snapshot);
+  assert.equal(saved.courseData[42].assignments[0].name,'Team Charter');
+  assert.deepEqual(saved.courseData[42].assignments[0],saved.derived.assignments[0]);
+  assert.deepEqual(saved.courseData[42].pageDetails.rubric,saved.global.latestPage);
+  assert.notStrictEqual(saved.courseData[42].assignments[0],saved.derived.assignments[0],
+    'JSON correctly duplicates repeated values rather than keeping aliases');
+  assert.equal(snapshot.derived.assignments[0],commonAssignment,
+    'Original locally cached objects must be untouched');
+});
+
+test('real circular references are rejected without changing local snapshot',()=>{
+  const snapshot=sample();
+  const page={url:'test'};
+  page.self=page;
+  snapshot.courseData[42].pageDetails.cyclic=page;
+  assert.throws(()=>sanitizeForCloud(snapshot),/circular reference/i);
+  assert.strictEqual(snapshot.courseData[42].pageDetails.cyclic,page);
+  assert.strictEqual(page.self,page);
+});
+
+test('secret fields are removed from every copy of shared references',()=>{
+  const snapshot=sample();
+  const repeated={id:1,name:'Assignment',apiToken:'sensitive-secret',nested:{refresh_token:'nope'}};
+  snapshot.courseData[42].assignments=[repeated];
+  snapshot.derived.assignments=[repeated];
+  const saved=sanitizeForCloud(snapshot);
+  assert.doesNotMatch(JSON.stringify(saved),/sensitive-secret|nope/);
+  assert.equal(saved.courseData[42].assignments[0].name,'Assignment');
+  assert.equal(saved.derived.assignments[0].name,'Assignment');
+});
+
 test('payload limit and record ownership are checked before cloud actions',()=>{
   const huge=sample();
   huge.courseData[42].long='x'.repeat(MAX_CLOUD_BYTES+10);
