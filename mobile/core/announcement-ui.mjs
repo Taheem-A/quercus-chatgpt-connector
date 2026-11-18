@@ -80,7 +80,11 @@ export function buildAnnouncementCatalog(snapshot,courseId='all',query='',filter
   const courses=announcementCourses(snapshot);
   const needle=String(query||'').trim().toLowerCase();
   const eligible=a=>matches(a,needle)&&announcementMatchesFilter(a,filter,now);
-  const current=courses.find(c=>c.id===String(courseId));
+  const current=courses.find(c=>c.id===String(courseId))||
+    (String(courseId)!=='all'
+      ?(snapshot?.courses||[]).filter(c=>String(c.id)===String(courseId)).map(c=>({
+        id:String(c.id),code:c.course_code||c.name||'Course '+c.id,name:c.name||'',items:[]
+      }))[0]:null);
   if(!current){
     const filteredCourses=courses.filter(c=>c.items.some(eligible)||
       (filter==='all'&&needle&&(c.name+' '+c.code).toLowerCase().includes(needle)));
@@ -167,7 +171,7 @@ export function buildAnnouncementReader(snapshot,courseId,id){
     '<div class="announcement-byline">'+
     '<span class="announcement-author-avatar" aria-hidden="true">'+
     escape((a.author||a.course).trim().charAt(0).toUpperCase())+'</span>'+
-    '<div><strong>'+escape(a.author||'Course instructor')+'</strong>'+
+    '<div><strong>'+escape(a.author||'Author not specified by Quercus')+'</strong>'+
     '<small>Posted '+escape(dateLabel(a.postedAt))+
     (a.updatedAt&&a.updatedAt!==a.postedAt?' · Updated '+escape(dateLabel(a.updatedAt)):'')+
     '</small></div>'+
