@@ -40,12 +40,15 @@ test('cloud pulls preserve unsynced local work and apply only newer cloud versio
 test('credentials and secret-like fields cannot be put into cloud snapshots',()=>{
   const unsafe=sample();
   unsafe.apiToken='secret-on-root';
+  unsafe.token='bare-token-secret';
+  unsafe.global.auth_token='nested-auth-secret';
+  unsafe.global.refresh_token='nested-refresh-secret';
   unsafe.courseData[42].access_token='secret-on-course';
   unsafe.meta.refresh_token='secret-in-meta';
   unsafe.global.nested={password:'hidden',authorization:'bearer secret',legit:'allowed'};
   const safe=sanitizeForCloud(unsafe);
   const text=JSON.stringify(safe);
-  assert.doesNotMatch(text,/secret-on-root|secret-on-course|secret-in-meta|bearer secret|hidden/);
+  assert.doesNotMatch(text,/secret-on-root|secret-on-course|secret-in-meta|bearer secret|hidden|bare-token-secret|nested-auth-secret|nested-refresh-secret/);
   assert.match(text,/Private course notes/);
   assert.equal(safe.global.nested.legit,'allowed');
   assert.equal(safe.apiToken,undefined);
@@ -67,6 +70,10 @@ test('cloud implementation cannot mix storage keys or auto-upload legacy data on
   assert.match(source,/await writeAuth\('has-used-account',true\)/);
   assert.match(source,/state\.token=null;state\.cloudEnabled=false/);
   assert.match(source,/state\.cloudPending/);
+  assert.match(source,/state\.cloudPending=Boolean\(state\.cloudPending\|\|/);
+  assert.match(source,/conflict-backup:/);
+  assert.match(source,/cloudUseRemote/);
+  assert.match(source,/auth\.emailOtp\.verifyEmail|cloudAuth\.verifyEmail/);
 });
 
 test('database migration has enforced RLS and no anonymous read grants',()=>{
