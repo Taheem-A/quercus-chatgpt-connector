@@ -155,7 +155,7 @@ function render(){
   $('syncAgain')?.addEventListener('click',()=>state.token?startLiveSync():openConnect());
   $('changeToken')?.addEventListener('click',openConnect);
   $('forgetToken')?.addEventListener('click',async()=>{await dbForgetToken();state.token=null;alert('Saved access token cleared from this device.');});
-  $('clearData')?.addEventListener('click',async()=>{if(!confirm('Delete all imported Quercus data AND your saved access token from this phone?'))return;await dbClear();state.token=null;state.snapshot=null;state.markdown=null;state.reader=null;state.assignmentReader=null;state.assignmentCourse='all';state.course='all';state.view='home';render()});
+  $('clearData')?.addEventListener('click',async()=>{if(!confirm('Delete all imported Quercus data AND your saved access token from this phone?'))return;await dbClear();state.token=null;state.snapshot=null;state.markdown=null;state.reader=null;state.assignmentReader=null;state.assignmentCourse='all';state.course='all';state.view='home';if(!state.cloudUser)state.guestBackup=null;render()});
 }
 function navigateCourse(courseId) {
   if (!state.snapshot) return;
@@ -287,6 +287,7 @@ async function importFile(file){
     const snapshot=validateSnapshot(JSON.parse(text));
     await dbWrite({kind:'json',value:snapshot});
     state.snapshot=snapshot;state.markdown=null;
+    await cloud.localChanged(snapshot,{fromQuercus:false});
   } else if(file.name.toLowerCase().endsWith('.md')) {
     if(!text.startsWith('# Quercus'))throw new Error('This does not look like a Quercus Markdown export.');
     await dbWrite({kind:'markdown',value:text});
@@ -484,6 +485,7 @@ async function startLiveSync() {
     // Write only after a validated sync; do not replace good data on API failure.
     await dbWrite({ kind: 'json', value: next });
     state.snapshot = next;
+    await cloud.localChanged(next,{fromQuercus:true});
     state.markdown = null;
     state.view = 'home';
     state.reader = null;
@@ -593,6 +595,7 @@ document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',(
 }));
 window.addEventListener('popstate',restoreReaderRoute);
 window.addEventListener('hashchange',restoreReaderRoute);
-try {const stored=await dbRead();if(stored?.kind==='json')state.snapshot=validateSnapshot(stored.value);else if(stored?.kind==='markdown')state.markdown=stored.value;state.token=await dbReadToken();}catch(e){console.warn('Could not read private mobile storage',e);}
+try {const used=Boolean(await dbReadAuth('has-used-account'));const stored=used?null:await dbRead();if(stored?.kind==='json')state.snapshot=validateSnapshot(stored.value);else if(stored?.kind==='markdown')state.markdown=stored.value;state.token=used?null:await dbReadToken();}catch(e){console.warn('Could not read private mobile storage',e);}
 restoreReaderRoute();
+await cloud.initialize();
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('./sw.js').catch(()=>{});
