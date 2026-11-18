@@ -74,13 +74,13 @@ export function proposeCourseMappings(snapshot,tree,manual={}){
 }
 const RULES=[
   {key:'course-info',matcher:/\b(syllabus|course\s+(outline|info|schedule)|grading policy|course description)\b/i,folders:/\b(course info|syllabus)\b/i},
-  {key:'tutorial',matcher:/\b(tutorial|practical|lab(?:oratory)?|tut\b)\b/i,folders:/\b(tutorial|practical|lab)\b/i},
-  {key:'lecture',matcher:/\b(lecture|lec\b|slide|class notes)\b/i,folders:/\blecture\b/i},
-  {key:'reading',matcher:/\b(reading|textbook|chapter|ebook)\b/i,folders:/\b(reading|textbook)\b/i},
+  {key:'tutorial',matcher:/\b(tutorial|practical|lab(?:oratory)?|tut\b)\b/i,folders:/\b(tutorials?|practicals?|labs?)\b/i},
+  {key:'lecture',matcher:/\b(lecture|lec\b|slide|class notes)\b/i,folders:/\blectures?\b/i},
+  {key:'reading',matcher:/\b(reading|textbook|chapter|ebook)\b/i,folders:/\b(readings?|textbooks?)\b/i},
   {key:'practice',matcher:/\b(practice|problem set|webwork|worksheet|booklet|exercise)\b/i,folders:/\bpractice\b/i},
-  {key:'assessment',matcher:/\b(midterm|final exam|quiz|exam|test|assessment|marking scheme)\b/i,folders:/\bassessment\b/i},
-  {key:'assignment',matcher:/\b(assignment|project|charter|requirements|design specification|deliverable)\b/i,folders:/\bassignment|project\b/i},
-  {key:'reference',matcher:/\b(reference|formula sheet|cheat sheet|handbook|appendix)\b/i,folders:/\breference\b/i},
+  {key:'assessment',matcher:/\b(midterm|final exam|quiz|exam|test|assessment|marking scheme)\b/i,folders:/\bassessments?\b/i},
+  {key:'assignment',matcher:/\b(assignment|project|charter|requirements|design specification|deliverable)\b/i,folders:/\b(assignments?|projects?)\b/i},
+  {key:'reference',matcher:/\b(reference|formula sheet|cheat sheet|handbook|appendix)\b/i,folders:/\breferences?\b/i},
 ];
 // No AI guesswork: strict folder title and source term matching. User-defined
 // overrides always take precedence, and uncertain decisions stay in Review.
