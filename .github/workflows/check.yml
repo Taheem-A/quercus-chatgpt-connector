@@ -20,3 +20,5 @@ jobs:
         run: npm run check
       - name: File-sync regression tests
         run: npm test
+      - name: Install and build cross-platform web app
+        run: npm --prefix mobile install --ignore-scripts --no-audit --no-fund && npm --prefix mobile run build
