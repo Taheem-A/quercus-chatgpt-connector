@@ -74,7 +74,7 @@ function snapshotHome(){
         a.author?'By '+a.author+' · '+readableDate(a.postedAt):readableDate(a.postedAt),
         '<button class="button outline" type="button" data-open-announcement-course="'+
         escapeHtml(a.courseId)+'" data-open-announcement-id="'+escapeHtml(a.id)+'">Read announcement</button>',
-        '',a.course),4)));
+        '',a.course),4));
 }
 function snapshotTasks(){
   return state.assignmentReader
