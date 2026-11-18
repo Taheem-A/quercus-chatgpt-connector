@@ -83,7 +83,7 @@ test('unambiguous folder source takes precedence, otherwise stricter category ru
   assert.equal(byId(101).why,'matching-source-folder');
   assert.equal(byId(101).status,'ready');
   assert.equal(byId(102).folderId,tuts);
-  assert.equal(byId(102).status,'name-conflict','never silently overwrite a user's same-name file');
+  assert.equal(byId(102).status,'name-conflict',"never silently overwrite a user's same-name file");
   assert.equal(byId(103).status,'review');
   assert.equal(byId(104).folderId,projects);
   assert.equal(byId(104).status,'ready');
