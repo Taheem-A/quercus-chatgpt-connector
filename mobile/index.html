@@ -71,6 +71,16 @@
       <label class="account-field">Password<input id="authPassword" type="password" autocomplete="current-password" placeholder="Your password"></label>
       <button id="authSubmit" type="button" class="button account-primary">Sign in</button>
       <button id="authGoogle" type="button" class="button outline account-primary">Continue with Google</button>
+      <button id="authForgotPassword" type="button" class="account-text-action">Forgot password?</button>
+      <div id="authPasswordRecovery" class="auth-verification" hidden>
+        <p>Reset your account password with an email verification code.</p>
+        <label class="account-field">Account email<input id="authResetEmail" type="email" autocomplete="email" placeholder="you@example.com"></label>
+        <button id="authSendResetCode" type="button" class="button outline account-primary">Send recovery code</button>
+        <label class="account-field">Recovery code<input id="authResetOtp" inputmode="numeric" type="text" autocomplete="one-time-code" maxlength="12"></label>
+        <label class="account-field">New password<input id="authNewPassword" type="password" autocomplete="new-password" placeholder="At least 10 characters"></label>
+        <button id="authCompleteReset" type="button" class="button account-primary">Reset password</button>
+        <button id="authCancelReset" type="button" class="account-text-action">Back to sign in</button>
+      </div>
       <div id="authVerification" class="auth-verification" hidden>
         <p>Enter the email verification code sent to your inbox.</p>
         <label class="account-field">Verification code<input id="authOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="Email code"></label>
