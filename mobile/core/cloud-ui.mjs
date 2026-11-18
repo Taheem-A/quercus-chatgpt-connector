@@ -31,13 +31,13 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
     $('accountButton').classList.toggle('signed-in',Boolean(id));
     if(id){
       const email=state.cloudUser.email||'Account';
-      setBanner(state.cloudError?
+      setBanner(state.offlineSession? 'Offline mode · your account’s saved device copy is available. Sign in online to resume cloud sync.' : state.cloudError?
         'Cloud sync: '+state.cloudError :
         (state.cloudPending?
           'This device has changes that have not reached the cloud.' :
           (state.cloudRecord ? 'Cloud connected · '+email+' · Snapshot shared between devices.' :
           'Signed in · '+email+' · No cloud snapshot uploaded yet.')),
-        Boolean(state.cloudError||state.cloudPending),
+        Boolean(state.offlineSession||state.cloudError||state.cloudPending),
         state.cloudPending?'Review':'Account',openAccount);
     } else if(state.hasUsedCloudAccount){
       setBanner('Device-only mode. Sign in to restore your private cloud workspace.',false,'Sign in',openAccount);
@@ -54,10 +54,11 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
           (state.cloudPending?' · newer device copy awaiting upload':'')
         : 'No uploaded snapshot yet. You can continue to use Quercus without uploading.';
       $('cloudAutoUpload').checked=Boolean(state.cloudEnabled);
+      $('cloudAutoUpload').disabled=Boolean(state.offlineSession);
       $('cloudRestoreBackup').hidden=!state.guestBackup;
-      $('cloudUploadNow').disabled=Boolean(state.cloudBusy);
-      $('cloudCheckNow').disabled=Boolean(state.cloudBusy);
-      $('cloudDelete').disabled=Boolean(state.cloudBusy||!state.cloudRecord);
+      $('cloudUploadNow').disabled=Boolean(state.cloudBusy||state.offlineSession||!navigator.onLine);
+      $('cloudCheckNow').disabled=Boolean(state.cloudBusy||state.offlineSession||!navigator.onLine);
+      $('cloudDelete').disabled=Boolean(state.cloudBusy||!state.cloudRecord||state.offlineSession);
     }
     $('guestBackupButton').hidden=!state.guestBackup||logged;
   }
@@ -78,6 +79,8 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
     if(!user?.id)throw new Error('Invalid account session.');
     const oldId=userId();
     state.cloudUser=user;
+    state.offlineSession=false;
+    await writeAuth('last-account',{id:user.id,email:user.email||''});
     state.hasUsedCloudAccount=true;
     await writeAuth('has-used-account',true);
     state.token=await readAuth(tokenKey(user.id))||null;
@@ -94,7 +97,7 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
     if(oldId && oldId!==user.id)state.cloudError='';
   }
   async function pull(initial=false){
-    if(!userId() || checking || !navigator.onLine)return;
+    if(!userId() || state.offlineSession || checking || !navigator.onLine)return;
     checking=true;state.cloudBusy=true;
     try{
       const id=userId();
@@ -125,7 +128,7 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
     }
   }
   async function upload(skipConfirm=false){
-    if(!userId())return openAccount();
+    if(!userId()||state.offlineSession){openAccount();msg('Connect to the internet and sign in again before uploading data.');return;}
     const snapshot=state.snapshot||state.guestBackup;
     if(!snapshot){msg('There is no locally saved JSON snapshot to upload. Sync Quercus or import Complete JSON first.');return;}
     const decision=decideUpload(snapshot,state.cloudRecord);
@@ -162,7 +165,7 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
     state.cloudPending=true;
     state.cloudError='';
     status();
-    if(fromQuercus && state.cloudEnabled){
+    if(fromQuercus && state.cloudEnabled && !state.offlineSession){
       await upload(true); // consent given by the account's explicit toggle
     }
   }
@@ -177,26 +180,59 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
     state.cloudBusy=true;$('authSubmit').disabled=true;$('authGoogle').disabled=true;
     try{
       msg(mode==='signUp'?'Creating your account…':'Signing in…');
-      const result=mode==='signUp' ? await cloudAuth.signUp(email,password,name) :
-        await cloudAuth.signIn(email,password);
+      // Account creation may return a user object BEFORE email verification:
+      // never show protected data until getSession confirms authentication.
+      if(mode==='signUp')await cloudAuth.signUp(email,password,name);
+      else await cloudAuth.signIn(email,password);
       $('authPassword').value='';
-      const user=result?.user || await cloudAuth.current();
+      const user=await cloudAuth.current();
       if(user){
         msg('Signed in.',true);
         await adoptAccount(user);
         $('accountDialog').close();
+      }else if(mode==='signUp'){
+        $('authVerification').hidden=false;
+        msg('Account created. Enter the email verification code sent to '+email+'.',true);
       }else{
-        msg('Account created. Check your email for the verification message, then sign in.',true);
-        setMode('signIn');
+        msg('Check your email verification code, then try signing in.');
+        $('authVerification').hidden=false;
       }
     }catch(error){msg(error?.message||'Authentication failed.');}
     finally{state.cloudBusy=false;$('authSubmit').disabled=false;$('authGoogle').disabled=false;status();}
+  }
+  async function verifyEmail(){
+    if(state.cloudBusy)return;
+    const email=$('authEmail').value.trim();
+    const otp=$('authOtp').value.trim();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !/^[a-zA-Z0-9]{4,12}$/.test(otp)){
+      msg('Enter the email used for sign-up and the verification code sent to it.');return;
+    }
+    state.cloudBusy=true;$('authVerify').disabled=true;
+    try{
+      msg('Verifying email…');
+      await cloudAuth.verifyEmail(email,otp);
+      $('authOtp').value='';
+      const user=await cloudAuth.current();
+      if(user){
+        await adoptAccount(user);
+        msg('Email verified and signed in.',true);
+        $('accountDialog').close();
+      }else{
+        setMode('signIn');
+        $('authVerification').hidden=true;
+        msg('Email verified! Sign in with your password to open the private workspace.',true);
+      }
+    }catch(error){msg(error?.message||'Verification unsuccessful. Check the code and try again.');}
+    finally{state.cloudBusy=false;$('authVerify').disabled=false;status();}
   }
   async function signOut(){
     if(!userId())return;
     if(!confirm('Sign out of Quercus Pocket on this device? Your account data stays in the cloud and your device cache is preserved but hidden.'))return;
     try{
+      if(state.offlineSession){throw new Error('Reconnect to the internet to securely end your authenticated session.');}
       await cloudAuth.signOut();
+      await removeAuth('last-account');
+      state.offlineSession=false;
       state.cloudUser=null;state.token=null;state.cloudEnabled=false;state.cloudRecord=null;
       state.cloudPending=false;state.cloudError='';
       // Do not show the preceding account's private cached records or token
@@ -225,25 +261,61 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
     initialized=true;
     state.guestBackup=(await readLocal('latest'))?.value||null;
     state.hasUsedCloudAccount=Boolean(await readAuth('has-used-account'));
+    const last=await readAuth('last-account');
     try{
-      const user=await cloudAuth.current();
-      if(user)await adoptAccount(user);
-      else if(state.hasUsedCloudAccount){
-        state.token=null;updateSnapshot(null);
+      if(!navigator.onLine && last?.id){
+        await adoptOfflineAccount(last);
+      }else{
+        const user=await cloudAuth.current();
+        if(user)await adoptAccount(user);
+        else if(state.hasUsedCloudAccount){
+          state.token=null;updateSnapshot(null);
+        }
       }
     }catch(error){
-      state.cloudError='Account service unavailable. Device-only data has not been erased.';
-      if(state.hasUsedCloudAccount){state.token=null;updateSnapshot(null);}
+      if(!navigator.onLine && last?.id)await adoptOfflineAccount(last);
+      else {
+        state.cloudError='Account service unavailable. Device-only data has not been erased.';
+        if(state.hasUsedCloudAccount){state.token=null;updateSnapshot(null);}
+      }
     }
     status();render();
     pollHandle=setInterval(()=>{
-      if(userId() && document.visibilityState==='visible' && navigator.onLine)pull();
+      if(userId() && !state.offlineSession && document.visibilityState==='visible' && navigator.onLine)pull();
     },120000);
+  }
+  async function adoptOfflineAccount(last){
+    if(!last?.id || typeof last.id!=='string')return;
+    state.cloudUser={id:last.id,email:last.email||'Offline account'};
+    state.offlineSession=true;state.cloudEnabled=false;
+    state.token=null;state.cloudRecord=null;
+    state.cloudError='Account session not verified while offline.';
+    const local=await readLocal(localKey(last.id));
+    updateSnapshot(local?.kind==='json'?local.value:null);
+  }
+  async function resumeOnlineAccount(){
+    if(!navigator.onLine)return;
+    if(state.offlineSession){
+      const expected=userId();
+      try {
+        const user=await cloudAuth.current();
+        if(user && user.id===expected){await adoptAccount(user);return;}
+      }catch{return;}
+      // The previous account was signed out or replaced while offline.
+      state.cloudUser=null;state.offlineSession=false;state.token=null;
+      state.cloudRecord=null;state.cloudPending=false;state.cloudEnabled=false;
+      updateSnapshot(null);status();
+      return;
+    }
+    if(userId())await pull();
   }
   $('accountButton').addEventListener('click',openAccount);
   $('signInMode').addEventListener('click',()=>setMode('signIn'));
   $('signUpMode').addEventListener('click',()=>setMode('signUp'));
   $('authSubmit').addEventListener('click',submitAccount);
+  $('authVerify').addEventListener('click',verifyEmail);
+  $('authOtp').addEventListener('keydown',e=>{if(e.key==='Enter')verifyEmail();});
+  $('authShowVerification').addEventListener('click',()=>{$('authVerification').hidden=false;msg('Enter your email and the verification code.');});
   $('authPassword').addEventListener('keydown',event=>{if(event.key==='Enter')submitAccount();});
   $('authGoogle').addEventListener('click',async()=>{
     try{msg('Redirecting to Google…');await cloudAuth.signInGoogle();}
@@ -276,8 +348,9 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
     await writeAuth(prefKey(userId()),state.cloudEnabled);
     status();
   });
-  window.addEventListener('focus',()=>{if(userId())pull();});
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&userId())pull();});
+  window.addEventListener('focus',resumeOnlineAccount);
+  window.addEventListener('online',resumeOnlineAccount);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')resumeOnlineAccount();});
   return {initialize,openAccount,status,pull,upload,localChanged,
     storageKey:()=>userId()?localKey(userId()):'latest',
     tokenStorageKey:()=>userId()?tokenKey(userId()):'token',
