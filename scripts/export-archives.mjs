@@ -55,7 +55,9 @@ export async function runLocalExport(options,{
         async getOne(apiPath){
           const result=await client.getOne(apiPath);
           const data=result.data;
-          if(data?.url)urls.set(data.url,String(data.id));
+          if(data?.url){
+            try{urls.set(new URL(data.url).href,String(data.id));}catch{}
+          }
           return result;
         }
       },
