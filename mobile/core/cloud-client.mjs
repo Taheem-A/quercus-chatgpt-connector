@@ -3,7 +3,8 @@ import { captureMillis, decideUpload, sanitizeForCloud, verifyOwnedRecord } from
 
 // This HTTPS endpoint contains no credentials. Neon Auth stores sessions and
 // injects a short-lived, user-scoped JWT into RLS-protected Data API requests.
-const AUTH_URL='https://ep-proud-poetry-bd2f21s9.neonauth.c-8.us-east-2.aws.neon.tech/quercus_pocket/auth';
+// First-party endpoint avoids Safari/WebKit blocking third-party auth cookies.
+const AUTH_URL=location.origin+'/auth';
 const DATA_API_URL='https://ep-proud-poetry-bd2f21s9.apirest.c-8.us-east-2.aws.neon.tech/quercus_pocket/rest/v1';
 const neon=createClient({
   auth: {url:AUTH_URL},
@@ -41,9 +42,6 @@ export const cloudAuth={
   },
   async verifyEmail(email,otp){
     return check(await neon.auth.emailOtp.verifyEmail({email,otp}),'Verify email');
-  },
-  async signInGoogle(){
-    return check(await neon.auth.signIn.social({provider:'google',callbackURL:location.origin+'/'}),'Google sign in');
   },
   async signOut(){check(await neon.auth.signOut(),'Sign out');}
 };
