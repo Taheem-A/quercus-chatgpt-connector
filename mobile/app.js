@@ -236,12 +236,47 @@ function restoreReaderRoute() {
   render();
 }
 function dbOpen(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,DB_VERSION);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('data'))req.result.createObjectStore('data');if(!req.result.objectStoreNames.contains('auth'))req.result.createObjectStore('auth')};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});}
-async function dbRead(){const db=await dbOpen();return new Promise((resolve,reject)=>{const t=db.transaction('data','readonly');const req=t.objectStore('data').get('latest');req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);t.oncomplete=()=>db.close();});}
-async function dbWrite(value){const db=await dbOpen();return new Promise((resolve,reject)=>{const t=db.transaction('data','readwrite');t.objectStore('data').put(value,'latest');t.oncomplete=()=>{db.close();resolve()};t.onerror=()=>{db.close();reject(t.error)};});}
-async function dbClear(){const db=await dbOpen();return new Promise((resolve,reject)=>{const t=db.transaction(['data','auth'],'readwrite');t.objectStore('data').clear();t.objectStore('auth').clear();t.oncomplete=()=>{db.close();resolve()};t.onerror=()=>{db.close();reject(t.error)};});}
-async function dbReadToken(){const db=await dbOpen();return new Promise((resolve,reject)=>{const t=db.transaction('auth','readonly');const q=t.objectStore('auth').get('token');q.onsuccess=()=>resolve(q.result||null);q.onerror=()=>reject(q.error);t.oncomplete=()=>db.close();});}
-async function dbSaveToken(token){const db=await dbOpen();return new Promise((resolve,reject)=>{const t=db.transaction('auth','readwrite');t.objectStore('auth').put(token,'token');t.oncomplete=()=>{db.close();resolve()};t.onerror=()=>{db.close();reject(t.error)};});}
-async function dbForgetToken(){const db=await dbOpen();return new Promise((resolve,reject)=>{const t=db.transaction('auth','readwrite');t.objectStore('auth').delete('token');t.oncomplete=()=>{db.close();resolve()};t.onerror=()=>{db.close();reject(t.error)};});}
+async function dbRead(key='latest'){const db=await dbOpen();return new Promise((resolve,reject)=>{
+  const t=db.transaction('data','readonly');const req=t.objectStore('data').get(key);
+  req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);t.oncomplete=()=>db.close();
+});}
+async function dbWrite(value,key=cloud.storageKey()){const db=await dbOpen();return new Promise((resolve,reject)=>{
+  const t=db.transaction('data','readwrite');t.objectStore('data').put(value,key);
+  t.oncomplete=()=>{db.close();resolve()};t.onerror=()=>{db.close();reject(t.error)};
+});}
+async function dbClear(){const db=await dbOpen();return new Promise((resolve,reject)=>{
+  const t=db.transaction(['data','auth'],'readwrite');
+  t.objectStore('data').delete(cloud.storageKey());
+  t.objectStore('auth').delete(cloud.tokenStorageKey());
+  t.oncomplete=()=>{db.close();resolve()};t.onerror=()=>{db.close();reject(t.error)};
+});}
+async function dbReadAuth(key){const db=await dbOpen();return new Promise((resolve,reject)=>{
+  const t=db.transaction('auth','readonly');const q=t.objectStore('auth').get(key);
+  q.onsuccess=()=>resolve(q.result??null);q.onerror=()=>reject(q.error);t.oncomplete=()=>db.close();
+});}
+async function dbWriteAuth(key,value){const db=await dbOpen();return new Promise((resolve,reject)=>{
+  const t=db.transaction('auth','readwrite');t.objectStore('auth').put(value,key);
+  t.oncomplete=()=>{db.close();resolve()};t.onerror=()=>{db.close();reject(t.error)};
+});}
+async function dbRemoveAuth(key){const db=await dbOpen();return new Promise((resolve,reject)=>{
+  const t=db.transaction('auth','readwrite');t.objectStore('auth').delete(key);
+  t.oncomplete=()=>{db.close();resolve()};t.onerror=()=>{db.close();reject(t.error)};
+});}
+async function dbReadToken(){return dbReadAuth(cloud.tokenStorageKey());}
+async function dbSaveToken(token){return dbWriteAuth(cloud.tokenStorageKey(),token);}
+async function dbForgetToken(){return dbRemoveAuth(cloud.tokenStorageKey());}
+function switchSnapshot(next){
+  state.snapshot=next||null;state.markdown=null;
+  state.reader=null;state.assignmentReader=null;
+  state.course='all';state.assignmentCourse='all';
+  state.view='home';state.query='';$('search').value='';
+  if(location.hash.startsWith('#/'))history.replaceState({},'',location.pathname+location.search);
+  render();
+}
+const cloud=setupCloud({state,readLocal:dbRead,writeLocal:dbWrite,
+  readAuth:dbReadAuth,writeAuth:dbWriteAuth,removeAuth:dbRemoveAuth,
+  updateSnapshot:switchSnapshot,render});
+
 async function importFile(file){
   const msg=$('importMessage');
   if(!file)return;
