@@ -16,7 +16,7 @@ const failMessage=status=>status===401?'Google Drive authorization expired. Reco
   :status===429?'Google Drive API quota exceeded. Try again later.'
   :'Google Drive API returned HTTP '+status+'.';
 export class DriveClient{
-  constructor(getToken,fetcher=fetch){
+  constructor(getToken,fetcher=(...args)=>globalThis.fetch(...args)){
     if(typeof getToken!=='function')throw Error('Google authorization callback is required.');
     this.getToken=getToken;this.fetcher=fetcher;
   }
@@ -34,7 +34,16 @@ export class DriveClient{
         ...(body!=null?{body}:{}),
         cache:'no-store',credentials:'omit',redirect:'error',signal,
       });
-    }catch{throw Error('Could not reach Google Drive. Check your connection and try again.');}
+    }catch(error){
+      // Network and CORS errors cannot generally be distinguished in browser
+      // JavaScript, but a native-method receiver bug is an application error,
+      // not evidence that the user's internet connection is down.
+      const detail=String(error?.message||'');
+      if(/illegal invocation|incompatible receiver|Window\.fetch|Window\.setTimeout|called on an object|instances of Window/i.test(detail)){
+        throw Error('Google Drive browser API compatibility error. Reload Quercus Pocket and retry.');
+      }
+      throw Error('Google Drive browser request failed before a response. This may be a CORS restriction, blocked redirect, or network problem. Check the browser Network panel for the Google Drive request.');
+    }
     if(!response.ok)throw Error(failMessage(response.status));
     return response;
   }
