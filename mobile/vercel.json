@@ -8,5 +8,9 @@
       "source": "/auth/:path*",
       "destination": "/api/auth-proxy?path=:path*"
     }
-  ]
+  ],
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": false
+  }
 }
