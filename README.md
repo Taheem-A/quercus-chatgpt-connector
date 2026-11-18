@@ -86,6 +86,20 @@ The Pages tab now provides a **course → Modules → Pages** hierarchy instead 
 - The signed file URL is handled directly in the phone's browser and not persisted in our backend. The Vercel relay only returns authorized read-only JSON metadata; file bytes do not pass through Vercel. PDFs and images still need internet to load unless separately cached by the browser.
 - Canvas page HTML is reconstructed using allowlisted safe DOM elements. Scripts, event handlers, and arbitrary embeds are never executed; only HTTPS resources are eligible for remote image or frame loading.
 
+### Announcements centre and full announcement reader
+
+The cross-platform web app now has a dedicated **Announcements** navigation tab, organized like the existing Pages and Assignments readers:
+
+- **All-course feed:** Latest announcements from every synced course, sorted by actual Quercus posting date. Search by course, title, author and complete announcement message, including older messages.
+- **Course libraries:** Select a course to browse its full announcement timeline, grouped by month. Date filters offer **All**, **Past 7 days**, **Past 30 days**, **Unread** (only when Quercus explicitly supplies a read state), and **Pinned** (only when Quercus flags an announcement).
+- **Rich reading:** Opening an announcement displays the full HTML message in the existing allowlisted safe renderer, including inline images, headings, tables and clickable Quercus/internal links. Canvas file attachments use the same in-app file preview dialog as Pages and Assignments.
+- **Information:** Show author when supplied by Quercus, posted/updated dates, and available discussion reply counts. No author, posting date or read-state status is fabricated when the API doesn't return one.
+- **Navigation:** Bookmarkable URL hash routes, browser Back, Previous/Next announcements, desktop and tablet two-pane outline, and compact mobile portrait/landscape layouts.
+- **Connected links:** Announcements on Home and Courses link directly into this reader; links in saved Pages/Assignments that target a known announcement also navigate inside Pocket. Explicit **Open in Quercus** remains available for replies or inaccessible content.
+- **Robust input:** The reader de-duplicates announcements from global and per-course Canvas collections. If the global announcement endpoint is unavailable, it can fall back to cached course discussions with `is_announcement===true`, never treating ordinary discussions as announcements.
+
+This is a read-only feature and does not change a Quercus announcement's actual read state. It makes no new API calls during sync, does not automatically download binary attachments, and retains existing account cloud snapshots, offline caches and export compatibility.
+
 ### Assignment library and rich assignment details
 
 The old mobile **Tasks** card list has been replaced with an **Assignments** tab designed like the new Pages reader:
