@@ -33,6 +33,12 @@ export const cloudAuth={
   async signUp(email,password,name){
     return check(await neon.auth.signUp.email({email,password,name}),'Create account');
   },
+  async sendResetCode(email){
+    return check(await neon.auth.forgetPassword.emailOtp({email}),'Send recovery code');
+  },
+  async resetPassword(email,otp,password){
+    return check(await neon.auth.emailOtp.resetPassword({email,otp,password}),'Reset password');
+  },
   async verifyEmail(email,otp){
     return check(await neon.auth.emailOtp.verifyEmail({email,otp}),'Verify email');
   },
