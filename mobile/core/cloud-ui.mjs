@@ -56,9 +56,13 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
       $('cloudAutoUpload').checked=Boolean(state.cloudEnabled);
       $('cloudAutoUpload').disabled=Boolean(state.offlineSession);
       $('cloudRestoreBackup').hidden=!state.guestBackup;
+      $('cloudUseRemote').hidden=Boolean(!state.cloudRecord||!state.cloudPending||state.offlineSession);
+      $('cloudRestoreConflict').hidden=!state.conflictBackup;
       $('cloudUploadNow').disabled=Boolean(state.cloudBusy||state.offlineSession||!navigator.onLine);
       $('cloudCheckNow').disabled=Boolean(state.cloudBusy||state.offlineSession||!navigator.onLine);
       $('cloudDelete').disabled=Boolean(state.cloudBusy||!state.cloudRecord||state.offlineSession);
+      $('cloudUseRemote').disabled=Boolean(state.cloudBusy);
+      $('cloudRestoreConflict').disabled=Boolean(state.cloudBusy);
     }
     $('guestBackupButton').hidden=!state.guestBackup||logged;
   }
@@ -87,6 +91,7 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
     state.cloudEnabled=Boolean(await readAuth(prefKey(user.id)));
     state.cloudRecord=null;
     state.cloudError='';
+    state.conflictBackup=(await readLocal('conflict-backup:'+user.id))?.value||null;
     const local=await readLocal(localKey(user.id));
     // An account can only display its own scoped cache; never transfer an
     // unscoped guest snapshot or a different user's cache automatically.
@@ -113,8 +118,13 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
       } else if(record && existing){
         const localTime=captureMillis(existing);
         const remoteTime=Date.parse(record.source_synced_at||'');
-        state.cloudPending=Number.isFinite(remoteTime)&&localTime>remoteTime;
-        if(state.cloudPending)state.cloudError='A newer device snapshot exists locally. Review it before uploading.';
+        // Preserve an existing dirty flag even when the cloud becomes newer:
+        // otherwise a later poll could silently adopt cloud and erase edits.
+        state.cloudPending=Boolean(state.cloudPending||
+          (Number.isFinite(remoteTime) && localTime>remoteTime));
+        if(state.cloudPending)state.cloudError=remoteTime>localTime
+          ? 'Cloud contains newer information, but your unsent device copy was preserved. Choose Use newer cloud copy after reviewing.'
+          : 'A newer device snapshot exists locally. Review it before uploading.';
         else state.cloudError='';
       } else if(!record){
         state.cloudError='';
@@ -159,6 +169,36 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
       state.cloudError=error?.message||'Cloud upload failed';
       msg('Upload failed: '+state.cloudError+'. Your local data has been preserved.');
     }finally{state.cloudBusy=false;status();render();}
+  }
+  async function useCloud(){
+    if(!userId()||state.offlineSession||!navigator.onLine)return;
+    const id=userId();
+    await pull();
+    const latest=state.cloudRecord;
+    if(!latest?.snapshot){msg('No cloud snapshot is available.');return;}
+    if(!confirm('Replace the active device snapshot with the cloud version? Your current device snapshot will first be saved as a local conflict backup. Nothing will be uploaded.'))return;
+    state.cloudBusy=true;status();
+    try{
+      const existing=state.snapshot;
+      if(existing){
+        await writeLocal({kind:'json',value:existing},'conflict-backup:'+id);
+        state.conflictBackup=existing;
+      }
+      await writeLocal({kind:'json',value:latest.snapshot},localKey(id));
+      updateSnapshot(latest.snapshot);
+      state.cloudPending=false;state.cloudError='';
+      msg('Cloud snapshot loaded. A local conflict backup is available in Account.',true);
+    }catch(error){msg('Could not use cloud snapshot: '+error.message);}
+    finally{state.cloudBusy=false;status();render();}
+  }
+  async function restoreConflictBackup(){
+    if(!userId()||!state.conflictBackup)return;
+    if(!confirm('Restore your locally saved conflict backup as the active device copy? It will NOT be uploaded automatically.'))return;
+    await writeLocal({kind:'json',value:state.conflictBackup},localKey(userId()));
+    updateSnapshot(state.conflictBackup);
+    state.cloudPending=true;
+    msg('Local backup restored. Review it before choosing an upload.',true);
+    status();render();
   }
   async function localChanged(snapshot,{fromQuercus=false}={}){
     if(!userId())return;
@@ -233,7 +273,7 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
       await cloudAuth.signOut();
       await removeAuth('last-account');
       state.offlineSession=false;
-      state.cloudUser=null;state.token=null;state.cloudEnabled=false;state.cloudRecord=null;
+      state.cloudUser=null;state.token=null;state.cloudEnabled=false;state.cloudRecord=null;state.conflictBackup=null;
       state.cloudPending=false;state.cloudError='';
       // Do not show the preceding account's private cached records or token
       // to the next signed-out visitor.
@@ -366,6 +406,8 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
   $('authSignOut').addEventListener('click',signOut);
   $('cloudCheckNow').addEventListener('click',()=>pull());
   $('cloudUploadNow').addEventListener('click',()=>upload(false));
+  $('cloudUseRemote').addEventListener('click',useCloud);
+  $('cloudRestoreConflict').addEventListener('click',restoreConflictBackup);
   $('cloudDelete').addEventListener('click',deleteCloud);
   $('cloudRestoreBackup').addEventListener('click',async()=>{
     if(!userId()||!state.guestBackup)return;
