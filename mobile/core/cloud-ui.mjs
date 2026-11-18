@@ -318,6 +318,47 @@ export function setupCloud({state,readLocal,writeLocal,readAuth,writeAuth,remove
   $('authOtp').addEventListener('keydown',e=>{if(e.key==='Enter')verifyEmail();});
   $('authShowVerification').addEventListener('click',()=>{$('authVerification').hidden=false;msg('Enter your email and the verification code.');});
   $('authPassword').addEventListener('keydown',event=>{if(event.key==='Enter')submitAccount();});
+  $('authForgotPassword').addEventListener('click',()=>{
+    $('authPasswordRecovery').hidden=false;
+    $('authResetEmail').value=$('authEmail').value.trim();
+    msg('We’ll send a password recovery code to your account email.');
+  });
+  $('authCancelReset').addEventListener('click',()=>{
+    $('authPasswordRecovery').hidden=true;
+    $('authResetOtp').value='';$('authNewPassword').value='';
+    msg('');
+  });
+  $('authSendResetCode').addEventListener('click',async()=>{
+    const email=$('authResetEmail').value.trim();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){msg('Enter the email address for your account.');return;}
+    if(state.cloudBusy)return;
+    state.cloudBusy=true;$('authSendResetCode').disabled=true;
+    try{
+      await cloudAuth.sendResetCode(email);
+      msg('If this email belongs to an account, a recovery code was sent.',true);
+    }catch(error){msg(error?.message||'Recovery code could not be sent.');}
+    finally{state.cloudBusy=false;$('authSendResetCode').disabled=false;}
+  });
+  $('authCompleteReset').addEventListener('click',async()=>{
+    const email=$('authResetEmail').value.trim();
+    const otp=$('authResetOtp').value.trim();
+    const password=$('authNewPassword').value;
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)||!/^[a-zA-Z0-9]{4,12}$/.test(otp)){
+      msg('Enter your account email and the recovery code.');return;
+    }
+    if(password.length<10){msg('Your new password must be at least 10 characters.');return;}
+    if(state.cloudBusy)return;
+    state.cloudBusy=true;$('authCompleteReset').disabled=true;
+    try{
+      await cloudAuth.resetPassword(email,otp,password);
+      $('authNewPassword').value='';$('authResetOtp').value='';
+      $('authPasswordRecovery').hidden=true;
+      $('authEmail').value=email;
+      setMode('signIn');
+      msg('Password reset. Sign in with your new password.',true);
+    }catch(error){msg(error?.message||'Password reset failed.');}
+    finally{state.cloudBusy=false;$('authCompleteReset').disabled=false;}
+  });
   $('authGoogle').addEventListener('click',async()=>{
     try{msg('Redirecting to Google…');await cloudAuth.signInGoogle();}
     catch(error){msg(error?.message||'Google sign-in unavailable.');}
