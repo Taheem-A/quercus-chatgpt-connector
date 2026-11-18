@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Quercus Pocket">
   <meta name="description" content="Your cross-platform university workspace — courses, assignments, Pages and announcements, with optional private cloud sync">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; frame-src https: blob:; connect-src 'self' https://ep-proud-poetry-bd2f21s9.apirest.c-8.us-east-2.aws.neon.tech; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://accounts.google.com; style-src 'self'; img-src 'self' data: https:; frame-src https: blob:; connect-src 'self' https://www.googleapis.com https://accounts.google.com https://ep-proud-poetry-bd2f21s9.apirest.c-8.us-east-2.aws.neon.tech; object-src 'none'; base-uri 'none'; form-action 'none'">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
@@ -120,6 +120,58 @@
     <button id="connectNow" class="button" type="button">Connect and sync now</button>
     <p id="connectMessage" role="status"></p>
   </dialog>
+  <dialog id="driveDialog" class="drive-dialog" aria-label="Google Drive integration and filing">
+    <form method="dialog" class="dialog-head"><strong>Google Drive & file organizer</strong><button class="icon-button" aria-label="Close">✕</button></form>
+    <p>Map your existing semester and course folders, review every proposed destination, and explicitly approve new uploads. AI and automatic file movements are not used.</p>
+    <details class="drive-setup">
+      <summary>One-time Google Cloud OAuth setup</summary>
+      <p>Create a Google Cloud project, enable Google Drive API, and configure an OAuth consent screen with yourself as a test user. Create an OAuth Client ID for a <b>Web application</b>, with <code>https://quercus-pocket.vercel.app</code> as an authorized JavaScript origin. Paste that public client ID below. No client secret is used or needed. Google may require an app-verification step for wider distribution.</p>
+      <p>The app requests two scopes: <code>drive.metadata.readonly</code> to inspect your existing folder structure and <code>drive.file</code> to create new files. Google may require you to grant specific existing folders to the app using Picker; a 403 on upload will be reported rather than requesting unrestricted write access.</p>
+    </details>
+    <label class="drive-field">Public Google OAuth Web client ID
+      <input id="driveClientId" type="text" placeholder="123456789-...apps.googleusercontent.com" autocomplete="off" spellcheck="false">
+    </label>
+    <div class="drive-toolbar">
+      <button type="button" id="driveSaveConfig" class="button outline">Save settings locally</button>
+      <button type="button" id="driveConnect" class="button">Connect Google Drive</button>
+      <button type="button" id="driveDisconnect" class="button outline">Disconnect</button>
+    </div>
+    <p id="driveIdentity" class="drive-identity">Not connected</p>
+    <label class="drive-confirm"><input type="checkbox" id="driveConfirmAccount" disabled>
+      <span id="driveAccountInfo">Confirm the intended Google account before uploading files.</span>
+    </label>
+    <div class="account-divider"></div>
+    <label class="drive-field">Existing academic term folder — paste its Drive link
+      <input id="driveRootId" type="text" placeholder="https://drive.google.com/drive/folders/..." autocomplete="off" spellcheck="false">
+    </label>
+    <div class="drive-toolbar">
+      <button type="button" id="driveScan" class="button outline">Scan existing folder structure (read-only)</button>
+      <button type="button" id="driveUploadContext" class="button outline">Save ChatGPT-ready snapshot ZIP to Drive</button>
+    </div>
+    <p class="hint">Folder scans are read-only. The snapshot button creates a dedicated <b>Quercus Pocket Exports</b> folder if needed, then adds a new complete-data ZIP without attachment bytes. Nothing is overwritten.</p>
+    <section class="drive-area">
+      <h3>Course folders</h3>
+      <p class="hint">Exact course-code matches are suggested automatically. Change any destination without reorganizing Drive.</p>
+      <div id="driveFolderMap"></div>
+    </section>
+    <section class="drive-area">
+      <div class="drive-title-row"><h3>Attachment filing review</h3><select id="driveReviewFilter" aria-label="Filter Drive file review">
+        <option value="review">Needs review</option><option value="ready">Ready</option>
+        <option value="all">All files</option><option value="existing">Already uploaded</option>
+      </select></div>
+      <p id="driveSummary" class="hint">No Drive folder scanned.</p>
+      <div class="drive-toolbar">
+        <button type="button" id="driveSelectReady" class="button outline">Select all ready</button>
+        <button type="button" id="driveClearSelections" class="button outline">Clear selections</button>
+        <button type="button" id="driveUploadSelected" class="button">Upload 0 approved files</button>
+        <button type="button" id="driveCancel" class="button danger-outline" hidden>Stop upload</button>
+      </div>
+      <div id="driveFilePreview" class="drive-file-preview"></div>
+    </section>
+    <p id="driveStatus" role="status" aria-live="polite" class="drive-live">No files have been uploaded.</p>
+    <pre id="driveUploadReport" class="drive-report" aria-label="Drive upload errors and report"></pre>
+    <p class="hint">Drive OAuth access tokens exist in memory only and expire. Folder mappings are stored on this device, scoped to your Pocket account. No files are deleted, moved, or overwritten. Quercus signed downloads may be blocked by browser CORS, in which case affected files remain unsynced.</p>
+  </dialog>
   <dialog id="exportDialog">
     <form method="dialog" class="dialog-head"><strong>Export Quercus data</strong><button class="icon-button" aria-label="Close">✕</button></form>
     <p>Create an export from the latest data saved on this device. Exports are generated locally. On iPhone use Share to save to Files; on desktop use Download.</p>
@@ -146,6 +198,7 @@
     <p class="hint">On iPhone: first open this site in Safari, tap Share → Add to Home Screen, and launch the installed icon before importing. Saved exports stay on this device and are not uploaded.</p>
     <p id="importMessage" role="status"></p>
   </dialog>
+  <script async src="https://accounts.google.com/gsi/client"></script>
   <script type="module" src="./app.js"></script>
 </body>
 </html>
