@@ -22,6 +22,12 @@ Quercus Pocket remains at **https://quercus-pocket.vercel.app/**. It now support
 
 The account database stores the **latest snapshot**, not continuously live Canvas data; a device must actively perform a Quercus sync when fresh university information is needed. The application cannot guarantee unattended background polling from a closed browser.
 
+### Signed JWT handoff for cloud access
+
+After you log in, Neon Auth maintains a first-party HTTP-only account session cookie. **That cookie's opaque session identifier is not a Data API credential.** Before every cloud snapshot read/write, the browser requests a short-lived signed JWT through `GET /auth/token` (same-origin proxy) and supplies it to a separate Data API client through `dataApi.getToken`. The query client rejects malformed or missing JWT responses **before sending any request to the database**. The Neon Data API verifies the JWT's signature, expiration, and role, and PostgreSQL's forced Row Level Security enforces the owner ID. No JWT, account session cookie, password, or Quercus token is persisted in the cloud snapshot.
+
+This corrects the error **“Provided authentication token is not a valid JWT encoding”** seen when the earlier integrated beta SDK data client tried to query Neon using a non-JWT credential. You do not have to recreate an account or refresh any Quercus course data. If a previously signed-in browser is still holding stale client state, reload the site and sign in again if requested.
+
 ### Privacy, database and conflict protection
 
 - Managed Neon Auth (Better Auth), email OTP verification, account passwords and a first-party HTTPS auth proxy for Safari/iOS. Quercus access tokens remain device-only and are not copied to the account database.
